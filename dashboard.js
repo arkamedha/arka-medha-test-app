@@ -26,6 +26,15 @@ document.getElementById("logoutBtn").addEventListener("click", () => {
     signOut(auth).then(() => { window.location.href = "index.html"; });
 });
 
+// सिक्यूरिटी ड्रापडाउन को हैंडल करना
+document.getElementById("authType").addEventListener("change", (e) => {
+    if(e.target.value === "pin") {
+        document.getElementById("pinSection").style.display = "block";
+    } else {
+        document.getElementById("pinSection").style.display = "none";
+    }
+});
+
 const publishBtn = document.getElementById("publishBtn");
 const statusMessage = document.getElementById("statusMessage");
 const loadQuestionsBtn = document.getElementById("loadQuestionsBtn");
@@ -35,6 +44,9 @@ let globalQuestions = {};
 publishBtn.addEventListener("click", async () => {
     const testName = document.getElementById("testName").value;
     const allowedRolls = document.getElementById("allowedRolls").value; 
+    const authType = document.getElementById("authType").value; 
+    const testPin = document.getElementById("testPin").value; 
+    
     const questionText = document.getElementById("questionText").value;
     const optA = document.getElementById("optA").value;
     const optB = document.getElementById("optB").value;
@@ -48,6 +60,12 @@ publishBtn.addEventListener("click", async () => {
         statusMessage.style.color = "red";
         return;
     }
+    
+    if (authType === "pin" && testPin === "") {
+        statusMessage.innerText = "Please enter a PIN! ❌";
+        statusMessage.style.color = "red";
+        return;
+    }
 
     statusMessage.innerText = "Saving... ⏳";
     statusMessage.style.color = "blue";
@@ -56,23 +74,16 @@ publishBtn.addEventListener("click", async () => {
         if (editId !== "") {
             const questionRef = doc(db, "Tests", editId);
             await updateDoc(questionRef, {
-                testName: testName,
-                allowedRolls: allowedRolls,
-                question: questionText,
-                options: { A: optA, B: optB, C: optC, D: optD },
-                answer: correctOption
+                testName: testName, allowedRolls: allowedRolls, authType: authType, testPin: testPin,
+                question: questionText, options: { A: optA, B: optB, C: optC, D: optD }, answer: correctOption
             });
             statusMessage.innerText = "Updated Successfully! ✅";
             document.getElementById("editDocId").value = ""; 
             publishBtn.innerText = "Publish Question"; 
         } else {
             await addDoc(collection(db, "Tests"), {
-                testName: testName,
-                allowedRolls: allowedRolls,
-                question: questionText,
-                options: { A: optA, B: optB, C: optC, D: optD },
-                answer: correctOption,
-                timestamp: new Date()
+                testName: testName, allowedRolls: allowedRolls, authType: authType, testPin: testPin,
+                question: questionText, options: { A: optA, B: optB, C: optC, D: optD }, answer: correctOption, timestamp: new Date()
             });
             statusMessage.innerText = "Published Successfully! ✅";
         }
@@ -105,11 +116,15 @@ loadQuestionsBtn.addEventListener("click", async () => {
         querySnapshot.forEach((docSnap) => {
             const data = docSnap.data();
             globalQuestions[docSnap.id] = data; 
-            let accessText = data.allowedRolls ? `(Only for: ${data.allowedRolls})` : `(For All Students)`;
+            
+            let securityBadge = "";
+            if(data.authType === "otp") securityBadge = `| 🔒 SMS OTP`;
+            else if(data.authType === "pin") securityBadge = `| 🔑 PIN: ${data.testPin}`;
+            else securityBadge = `| 🔓 Open Test`;
 
             html += `
                 <div class="saved-question">
-                    <div style="font-size: 14px; color: #666; margin-bottom: 5px;"><strong>Test:</strong> ${data.testName} <span style="color:red;">${accessText}</span></div>
+                    <div style="font-size: 14px; color: #666; margin-bottom: 5px;"><strong>Test:</strong> ${data.testName} <span style="color:blue;">${securityBadge}</span></div>
                     <div style="font-weight: bold; margin-bottom: 8px;">Q: ${data.question}</div>
                     <div style="font-size: 14px; margin-bottom: 5px;"><strong>Answer:</strong> Option ${data.answer}</div>
                     <button class="edit-btn" data-id="${docSnap.id}">✏️ Edit</button>
@@ -126,6 +141,12 @@ loadQuestionsBtn.addEventListener("click", async () => {
                 const qData = globalQuestions[docId];
                 document.getElementById("testName").value = qData.testName;
                 document.getElementById("allowedRolls").value = qData.allowedRolls || ""; 
+                document.getElementById("authType").value = qData.authType || "none";
+                document.getElementById("testPin").value = qData.testPin || "";
+                
+                // ट्रिगर चेंज इवेंट ताकि PIN बॉक्स दिखे या छुपे
+                document.getElementById("authType").dispatchEvent(new Event('change'));
+
                 document.getElementById("questionText").value = qData.question;
                 document.getElementById("optA").value = qData.options.A;
                 document.getElementById("optB").value = qData.options.B;
@@ -147,7 +168,6 @@ loadQuestionsBtn.addEventListener("click", async () => {
                 }
             });
         });
-
     } catch (error) {
         questionListArea.innerHTML = "<p style='color:red; text-align:center;'>Error loading! ❌</p>";
     }
@@ -168,24 +188,13 @@ if(viewResultsBtn) {
             let html = "";
             querySnapshot.forEach((docSnap) => {
                 const data = docSnap.data();
-                
                 let detailsHTML = "";
                 if(data.detailedResponses && data.detailedResponses.length > 0) {
-                    detailsHTML += `
-                    <details style="margin-top: 15px; background: #f1f1f1; padding: 10px; border-radius: 5px; cursor: pointer;">
-                        <summary style="font-weight: bold; color: #0056b3; outline: none;">👀 View Answer Sheet</summary>
-                        <div style="margin-top: 10px; font-size: 14px;">`;
-                        
+                    detailsHTML += `<details style="margin-top: 15px; background: #f1f1f1; padding: 10px; border-radius: 5px; cursor: pointer;"><summary style="font-weight: bold; color: #0056b3; outline: none;">👀 View Answer Sheet</summary><div style="margin-top: 10px; font-size: 14px;">`;
                     data.detailedResponses.forEach(res => {
                         let icon = (res.selected === res.correct) ? "✅" : (res.selected === "Not Attempted" ? "⚠️" : "❌");
-                        detailsHTML += `
-                            <p style="margin-bottom: 10px; border-bottom: 1px solid #ddd; padding-bottom: 8px;">
-                                <strong>Q${res.qNum}:</strong> ${res.question}<br>
-                                Student Answer: <strong>${res.selected}</strong> ${icon} <br>
-                                <span style="color: green; font-size: 13px;">Correct Answer: Option ${res.correct}</span>
-                            </p>`;
+                        detailsHTML += `<p style="margin-bottom: 10px; border-bottom: 1px solid #ddd; padding-bottom: 8px;"><strong>Q${res.qNum}:</strong> ${res.question}<br>Student Answer: <strong>${res.selected}</strong> ${icon} <br><span style="color: green; font-size: 13px;">Correct Answer: Option ${res.correct}</span></p>`;
                     });
-                    
                     detailsHTML += `</div></details>`;
                 }
 

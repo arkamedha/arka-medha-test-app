@@ -150,3 +150,39 @@ loadQuestionsBtn.addEventListener("click", async () => {
         questionListArea.innerHTML = "<p style='color:red; text-align:center;'>Error loading! ❌</p>";
     }
 });
+// 3. स्टूडेंट्स के रिज़ल्ट देखने का लॉजिक
+const viewResultsBtn = document.getElementById("viewResultsBtn");
+const studentResultsArea = document.getElementById("studentResultsArea");
+
+viewResultsBtn.addEventListener("click", async () => {
+    studentResultsArea.innerHTML = "<p style='text-align:center;'>Loading Results... ⏳</p>";
+    
+    try {
+        // डेटाबेस से "Results" मंगाना
+        const querySnapshot = await getDocs(collection(db, "Results"));
+        
+        if (querySnapshot.empty) {
+            studentResultsArea.innerHTML = "<p style='text-align:center; color:red;'>No results found yet.</p>";
+            return;
+        }
+
+        let html = "";
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            html += `
+                <div class="saved-question" style="border-left-color: #28a745;">
+                    <div style="font-weight: bold; font-size: 16px;">Student: ${data.studentName} (${data.rollNumber})</div>
+                    <div style="color: #666; margin-top: 5px;"><strong>Test:</strong> ${data.testName}</div>
+                    <div style="color: green; font-weight: bold; margin-top: 5px; font-size: 18px;">Score: ${data.score} / ${data.totalMarks}</div>
+                    <div style="font-size: 12px; color: #999; margin-top: 5px;">Time: ${data.date}</div>
+                </div>
+            `;
+        });
+        
+        studentResultsArea.innerHTML = html;
+
+    } catch (error) {
+        console.error("Error loading results: ", error);
+        studentResultsArea.innerHTML = "<p style='color:red; text-align:center;'>Error loading results! ❌</p>";
+    }
+});

@@ -109,7 +109,6 @@ async function startTest(selectedTestName) {
             const qId = doc.id;
             const qNum = totalQuestions + 1;
             
-            // अब हम सिर्फ सही जवाब ही नहीं, बल्कि पूरा सवाल भी सेव कर रहे हैं
             correctAnswers[qId] = { answer: data.answer, question: data.question }; 
 
             const questionHTML = `
@@ -143,7 +142,7 @@ submitTestBtn.addEventListener("click", async () => {
     submitTestBtn.disabled = true;
 
     let score = 0;
-    let detailedResponses = []; // नया: स्टूडेंट की पूरी आंसर शीट
+    let detailedResponses = []; 
     let qIndex = 1;
 
     for (let qId in correctAnswers) {
@@ -155,7 +154,6 @@ submitTestBtn.addEventListener("click", async () => {
             score++;
         }
 
-        // हर सवाल का डेटा तैयार करना
         detailedResponses.push({
             qNum: qIndex,
             question: correctAnswers[qId].question,
@@ -173,7 +171,7 @@ submitTestBtn.addEventListener("click", async () => {
             score: score,
             totalMarks: totalQuestions,
             date: new Date().toLocaleString(),
-            detailedResponses: detailedResponses // इस शीट को डेटाबेस में भेज रहे हैं
+            detailedResponses: detailedResponses
         });
 
         testContainer.style.display = "none";

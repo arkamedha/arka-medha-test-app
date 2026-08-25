@@ -8,6 +8,7 @@
         body { font-family: Arial, sans-serif; background-color: #f4f7f6; padding: 20px; }
         .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0px 4px 15px rgba(0,0,0,0.1); }
         h2 { color: #0056b3; text-align: center; border-bottom: 2px solid #ccc; padding-bottom: 10px; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 16px; }
         .test-btn { width: 100%; padding: 15px; margin: 10px 0; background-color: #17a2b8; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; }
         .test-btn:hover { background-color: #138496; }
         .question-box { background: #f9f9f9; padding: 15px; margin-top: 15px; border-radius: 5px; border: 1px solid #ddd; }
@@ -21,12 +22,25 @@
 <body>
     <div class="container">
         <h2>Arka-Medha Live Tests 📝</h2>
-        <div id="testSelectionArea">
+
+        <!-- स्टूडेंट से उसकी जानकारी लेने वाला सेक्शन -->
+        <div id="studentInfoArea">
+            <h3 style="text-align: center;">Enter Your Details</h3>
+            <input type="text" id="studentName" placeholder="Enter Your Full Name" required>
+            <input type="text" id="studentRoll" placeholder="Roll Number / Mobile No." required>
+            <button id="proceedBtn" class="submit-btn" style="background-color: #0056b3;">Continue to Tests</button>
+            <p id="infoError" style="color: red; text-align: center; display: none;">Please fill both fields!</p>
+        </div>
+
+        <!-- टेस्ट की लिस्ट (शुरुआत में छुपी रहेगी) -->
+        <div id="testSelectionArea" style="display: none;">
             <h3 style="text-align: center;">Select a Test to Start</h3>
             <div id="testList">
                 <p style="text-align:center;">Loading available tests... ⏳</p>
             </div>
         </div>
+
+        <!-- सवाल दिखने वाला सेक्शन -->
         <div id="examArea" style="display: none;">
             <h3 id="currentTestHeading" style="color: #e83e8c; text-align: center;"></h3>
             <div id="testContainer"></div>

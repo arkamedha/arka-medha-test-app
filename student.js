@@ -28,20 +28,17 @@ let currentTestName = "";
 let studentNameVal = "";
 let studentRollVal = "";
 let correctAnswers = {}; 
-let totalQuestions = 0;
+let totalMaxMarks = 0; // नया: टोटल कितने नंबर का पेपर है
 let timerInterval; 
 
 let testAuthTypeMap = {}; 
 let testPinMap = {}; 
 let testDurationMap = {}; 
 
-// 🟢 नया: पेज रिफ्रेश होने पर चेक करना कि क्या नाम पहले से सेव है
 window.onload = () => {
     if (sessionStorage.getItem("savedStudentName") && sessionStorage.getItem("savedStudentRoll")) {
         studentNameVal = sessionStorage.getItem("savedStudentName");
         studentRollVal = sessionStorage.getItem("savedStudentRoll");
-        
-        // सीधा टेस्ट लिस्ट दिखाएँ, नाम वाला फॉर्म छुपा दें
         studentInfoArea.style.display = "none";
         testSelectionArea.style.display = "block";
         loadAvailableTests(); 
@@ -55,11 +52,8 @@ proceedBtn.addEventListener("click", () => {
         document.getElementById("infoError").style.display = "block";
         return;
     }
-
-    // 🟢 नया: नाम और रोल नंबर को ब्राउज़र की मेमोरी में सेव करना
     sessionStorage.setItem("savedStudentName", studentNameVal);
     sessionStorage.setItem("savedStudentRoll", studentRollVal);
-
     studentInfoArea.style.display = "none";
     testSelectionArea.style.display = "block";
     loadAvailableTests(); 
@@ -132,40 +126,14 @@ document.getElementById("verifyPinBtn").addEventListener("click", () => {
     if(document.getElementById("enteredPin").value === testPinMap[currentTestName]) {
         securityArea.style.display = "none";
         startTest(currentTestName);
-    } else {
-        document.getElementById("securityError").innerText = "Incorrect PIN! ❌";
-    }
+    } else { document.getElementById("securityError").innerText = "Incorrect PIN! ❌"; }
 });
-
-document.getElementById("sendOtpBtn").addEventListener("click", () => {
-    const phoneNum = document.getElementById("phoneNum").value;
-    if(phoneNum.length < 10) return;
-    document.getElementById("securityError").innerText = "Sending OTP... ⏳";
-    window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', { 'size': 'invisible' });
-    signInWithPhoneNumber(auth, "+91" + phoneNum, window.recaptchaVerifier)
-        .then((result) => {
-            window.confirmationResult = result;
-            document.getElementById("securityError").innerText = "OTP Sent! ✅";
-            document.getElementById("sendOtpBtn").style.display = "none";
-            document.getElementById("otpInputDiv").style.display = "block";
-        }).catch((err) => { document.getElementById("securityError").innerText = "Error sending OTP."; });
-});
-
-document.getElementById("verifyOtpBtn").addEventListener("click", () => {
-    confirmationResult.confirm(document.getElementById("otpCode").value).then(() => {
-        securityArea.style.display = "none";
-        startTest(currentTestName);
-    }).catch(() => { document.getElementById("securityError").innerText = "Invalid OTP! ❌"; });
-});
-
 document.getElementById("cancelSecurityBtn").addEventListener("click", () => {
-    securityArea.style.display = "none";
-    testSelectionArea.style.display = "block";
+    securityArea.style.display = "none"; testSelectionArea.style.display = "block";
 });
 
 function updateTimerUI(seconds) {
-    let m = Math.floor(seconds / 60);
-    let s = seconds % 60;
+    let m = Math.floor(seconds / 60); let s = seconds % 60;
     document.getElementById("timeRemainingText").innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
 }
 
@@ -185,25 +153,39 @@ async function startTest(selectedTestName) {
         
         testContainer.innerHTML = "";
         correctAnswers = {};
-        totalQuestions = 0;
+        totalMaxMarks = 0;
+        let qIndex = 1;
 
         querySnapshot.forEach((doc) => {
             const data = doc.data();
             const qId = doc.id;
-            const qNum = totalQuestions + 1;
-            correctAnswers[qId] = { answer: data.answer, question: data.question }; 
+            const qType = data.qType || "MCQ";
+            const qMarks = data.marks || 1;
+            
+            correctAnswers[qId] = { answer: data.answer, question: data.question, marks: qMarks, type: qType }; 
+            totalMaxMarks += qMarks; // टोटल मार्क्स में जोड़ रहे हैं
 
-            const questionHTML = `
-                <div class="question-box">
-                    <div class="question-text">Q${qNum}. ${data.question}</div>
+            let inputHTML = "";
+            if(qType === "MCQ") {
+                inputHTML = `
                     <label class="option-label"><input type="radio" name="${qId}" value="A"> ${data.options.A}</label>
                     <label class="option-label"><input type="radio" name="${qId}" value="B"> ${data.options.B}</label>
                     <label class="option-label"><input type="radio" name="${qId}" value="C"> ${data.options.C}</label>
                     <label class="option-label"><input type="radio" name="${qId}" value="D"> ${data.options.D}</label>
+                `;
+            } else {
+                inputHTML = `<input type="text" id="subjAns_${qId}" class="subjective-input" placeholder="Type your answer here">`;
+            }
+
+            const questionHTML = `
+                <div class="question-box">
+                    <div class="question-text">Q${qIndex}. ${data.question}</div>
+                    <div class="marks-badge">${qMarks} Marks</div>
+                    ${inputHTML}
                 </div>
             `;
             testContainer.innerHTML += questionHTML;
-            totalQuestions++;
+            qIndex++;
         });
         
         submitTestBtn.innerText = "Submit Test";
@@ -214,13 +196,10 @@ async function startTest(selectedTestName) {
         if (durationStr && parseInt(durationStr) > 0) {
             document.getElementById("timerDisplay").style.display = "block";
             let timeRemaining = parseInt(durationStr) * 60; 
-            
             updateTimerUI(timeRemaining);
-            
             timerInterval = setInterval(() => {
                 timeRemaining--;
                 updateTimerUI(timeRemaining);
-                
                 if (timeRemaining <= 0) {
                     clearInterval(timerInterval);
                     alert("⏱️ Time is up! Your test is being automatically submitted.");
@@ -250,26 +229,44 @@ submitTestBtn.addEventListener("click", async () => {
     let qIndex = 1;
 
     for (let qId in correctAnswers) {
-        const selectedOptionNode = document.querySelector(`input[name="${qId}"]:checked`);
-        const selectedOption = selectedOptionNode ? selectedOptionNode.value : "Not Attempted";
-        const correctAnswer = correctAnswers[qId].answer;
+        const qData = correctAnswers[qId];
+        let selectedOption = "Not Attempted";
 
-        if (selectedOption === correctAnswer) score++;
+        if(qData.type === "MCQ") {
+            const selectedOptionNode = document.querySelector(`input[name="${qId}"]:checked`);
+            if(selectedOptionNode) selectedOption = selectedOptionNode.value;
+        } else {
+            const subjInput = document.getElementById(`subjAns_${qId}`);
+            if(subjInput && subjInput.value.trim() !== "") {
+                selectedOption = subjInput.value;
+            }
+        }
 
-        detailedResponses.push({ qNum: qIndex, question: correctAnswers[qId].question, selected: selectedOption, correct: correctAnswer });
+        const correctAnswer = qData.answer;
+        
+        // Subjective के लिए छोटे-बड़े अक्षर (Case) को माफ़ करना
+        if (selectedOption.trim().toLowerCase() === correctAnswer.trim().toLowerCase()) {
+            score += qData.marks; // सिर्फ +1 नहीं, बल्कि असली मार्क्स जुड़ेंगे
+        }
+
+        detailedResponses.push({ 
+            qNum: qIndex, question: qData.question, 
+            selected: selectedOption, correct: correctAnswer, 
+            marks: qData.marks, qType: qData.type 
+        });
         qIndex++;
     }
 
     try {
         await addDoc(collection(db, "Results"), {
             studentName: studentNameVal, rollNumber: studentRollVal, testName: currentTestName,
-            score: score, totalMarks: totalQuestions, date: new Date().toLocaleString(), detailedResponses: detailedResponses
+            score: score, totalMarks: totalMaxMarks, date: new Date().toLocaleString(), detailedResponses: detailedResponses
         });
 
         testContainer.style.display = "none";
         submitTestBtn.style.display = "none";
         document.getElementById("timerDisplay").style.display = "none"; 
-        document.getElementById("resultMessage").innerHTML = `Test Submitted Successfully! 🎉<br>Your Score: ${score} out of ${totalQuestions}`;
+        document.getElementById("resultMessage").innerHTML = `Test Submitted Successfully! 🎉<br>Your Score: ${score} / ${totalMaxMarks} Marks`;
     } catch(error) {
         alert("Error saving your result. Please try again.");
         submitTestBtn.innerText = "Submit Test";

@@ -16,29 +16,27 @@
         .view-btn:hover { background-color: #138496; }
         #statusMessage { text-align: center; font-weight: bold; margin-top: 15px; }
         .saved-question { background: #f9f9f9; padding: 15px; margin-top: 15px; border-left: 4px solid #0056b3; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .edit-btn { background-color: #ffc107; color: #333; padding: 8px; margin-top: 10px; width: auto; font-size: 14px; }
+        .edit-btn { background-color: #ffc107; color: #333; padding: 8px; margin-top: 10px; width: auto; font-size: 14px; border: none; border-radius: 4px; cursor: pointer; }
         .edit-btn:hover { background-color: #e0a800; }
+        .delete-btn { background-color: #dc3545; color: white; padding: 8px; margin-top: 10px; margin-left: 5px; width: auto; font-size: 14px; border: none; border-radius: 4px; cursor: pointer; }
+        .delete-btn:hover { background-color: #c82333; }
+        .logout-btn { background-color: #dc3545; margin-bottom: 20px; }
     </style>
 </head>
 <body>
-
     <div class="container">
+        <button id="logoutBtn" class="logout-btn">Log Out</button>
         <h2>Arka-Medha: Create / Edit Test</h2>
         
-        <!-- यह छुपा हुआ बॉक्स Edit करते समय Question ID याद रखेगा -->
         <input type="hidden" id="editDocId" value="">
-
-        <label>Test Name (e.g., JEE Main Mock Test 1):</label>
+        <label>Test Name (e.g., Mock Test 1):</label>
         <input type="text" id="testName" placeholder="Enter test name" required>
-
         <label>Question:</label>
-        <textarea id="questionText" rows="3" placeholder="Type your Maths/Physics question here..." required></textarea>
-
+        <textarea id="questionText" rows="3" placeholder="Type your question here..." required></textarea>
         <label>Option A:</label><input type="text" id="optA" required>
         <label>Option B:</label><input type="text" id="optB" required>
         <label>Option C:</label><input type="text" id="optC" required>
         <label>Option D:</label><input type="text" id="optD" required>
-
         <label>Correct Answer:</label>
         <select id="correctOption">
             <option value="A">Option A</option>
@@ -46,19 +44,13 @@
             <option value="C">Option C</option>
             <option value="D">Option D</option>
         </select>
-
-        <!-- यह बटन नया सवाल सेव भी करेगा और पुराने को अपडेट भी करेगा -->
-        <button id="publishBtn">Publish Question to Database</button>
+        <button id="publishBtn">Publish Question</button>
         <p id="statusMessage"></p>
-
         <hr style="margin: 30px 0; border: 1px solid #eee;">
-        
         <h2>View & Edit Saved Questions</h2>
         <button id="loadQuestionsBtn" class="view-btn">Load My Questions</button>
         <div id="questionListArea"></div>
     </div>
-
     <script type="module" src="dashboard.js"></script>
-
 </body>
 </html>

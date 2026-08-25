@@ -29,11 +29,24 @@ let studentNameVal = "";
 let studentRollVal = "";
 let correctAnswers = {}; 
 let totalQuestions = 0;
-let timerInterval; // टाइमर का वेरिएबल
+let timerInterval; 
 
 let testAuthTypeMap = {}; 
 let testPinMap = {}; 
-let testDurationMap = {}; // नया: टेस्ट का टाइम याद रखने के लिए
+let testDurationMap = {}; 
+
+// 🟢 नया: पेज रिफ्रेश होने पर चेक करना कि क्या नाम पहले से सेव है
+window.onload = () => {
+    if (sessionStorage.getItem("savedStudentName") && sessionStorage.getItem("savedStudentRoll")) {
+        studentNameVal = sessionStorage.getItem("savedStudentName");
+        studentRollVal = sessionStorage.getItem("savedStudentRoll");
+        
+        // सीधा टेस्ट लिस्ट दिखाएँ, नाम वाला फॉर्म छुपा दें
+        studentInfoArea.style.display = "none";
+        testSelectionArea.style.display = "block";
+        loadAvailableTests(); 
+    }
+};
 
 proceedBtn.addEventListener("click", () => {
     studentNameVal = document.getElementById("studentName").value;
@@ -42,6 +55,11 @@ proceedBtn.addEventListener("click", () => {
         document.getElementById("infoError").style.display = "block";
         return;
     }
+
+    // 🟢 नया: नाम और रोल नंबर को ब्राउज़र की मेमोरी में सेव करना
+    sessionStorage.setItem("savedStudentName", studentNameVal);
+    sessionStorage.setItem("savedStudentRoll", studentRollVal);
+
     studentInfoArea.style.display = "none";
     testSelectionArea.style.display = "block";
     loadAvailableTests(); 
@@ -119,7 +137,6 @@ document.getElementById("verifyPinBtn").addEventListener("click", () => {
     }
 });
 
-// OTP Logic (Phone Auth)
 document.getElementById("sendOtpBtn").addEventListener("click", () => {
     const phoneNum = document.getElementById("phoneNum").value;
     if(phoneNum.length < 10) return;
@@ -146,7 +163,6 @@ document.getElementById("cancelSecurityBtn").addEventListener("click", () => {
     testSelectionArea.style.display = "block";
 });
 
-// टाइमर अपडेट करने का फंक्शन
 function updateTimerUI(seconds) {
     let m = Math.floor(seconds / 60);
     let s = seconds % 60;
@@ -160,7 +176,6 @@ async function startTest(selectedTestName) {
     document.getElementById("currentTestHeading").innerText = selectedTestName;
     testContainer.innerHTML = "<p style='text-align:center;'>Loading questions... ⏳</p>";
     
-    // पुराना टाइमर बंद करें और छुपायें
     clearInterval(timerInterval);
     document.getElementById("timerDisplay").style.display = "none";
 
@@ -195,11 +210,10 @@ async function startTest(selectedTestName) {
         submitTestBtn.disabled = false;
         submitTestBtn.style.display = "block";
 
-        // नया: टाइमर शुरू करने का लॉजिक
         const durationStr = testDurationMap[selectedTestName];
         if (durationStr && parseInt(durationStr) > 0) {
             document.getElementById("timerDisplay").style.display = "block";
-            let timeRemaining = parseInt(durationStr) * 60; // मिनट्स को सेकंड्स में बदला
+            let timeRemaining = parseInt(durationStr) * 60; 
             
             updateTimerUI(timeRemaining);
             
@@ -207,11 +221,10 @@ async function startTest(selectedTestName) {
                 timeRemaining--;
                 updateTimerUI(timeRemaining);
                 
-                // अगर टाइम 0 हो जाए
                 if (timeRemaining <= 0) {
                     clearInterval(timerInterval);
                     alert("⏱️ Time is up! Your test is being automatically submitted.");
-                    submitTestBtn.click(); // ऑटो-सबमिट!
+                    submitTestBtn.click(); 
                 }
             }, 1000);
         }
@@ -222,13 +235,13 @@ async function startTest(selectedTestName) {
 }
 
 document.getElementById("backBtn").addEventListener("click", () => {
-    clearInterval(timerInterval); // बीच में छोड़ा तो टाइमर बंद
+    clearInterval(timerInterval); 
     examArea.style.display = "none";
     testSelectionArea.style.display = "block";
 });
 
 submitTestBtn.addEventListener("click", async () => {
-    clearInterval(timerInterval); // सबमिट करते ही टाइमर बंद
+    clearInterval(timerInterval); 
     submitTestBtn.innerText = "Submitting... ⏳";
     submitTestBtn.disabled = true;
 
@@ -255,7 +268,7 @@ submitTestBtn.addEventListener("click", async () => {
 
         testContainer.style.display = "none";
         submitTestBtn.style.display = "none";
-        document.getElementById("timerDisplay").style.display = "none"; // टाइमर छुपा दें
+        document.getElementById("timerDisplay").style.display = "none"; 
         document.getElementById("resultMessage").innerHTML = `Test Submitted Successfully! 🎉<br>Your Score: ${score} out of ${totalQuestions}`;
     } catch(error) {
         alert("Error saving your result. Please try again.");

@@ -17,10 +17,9 @@
         #statusMessage { text-align: center; font-weight: bold; margin-top: 15px; }
         .saved-question { background: #f9f9f9; padding: 15px; margin-top: 15px; border-left: 4px solid #0056b3; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .edit-btn { background-color: #ffc107; color: #333; padding: 8px; margin-top: 10px; width: auto; font-size: 14px; border: none; border-radius: 4px; cursor: pointer; }
-        .edit-btn:hover { background-color: #e0a800; }
         .delete-btn { background-color: #dc3545; color: white; padding: 8px; margin-top: 10px; margin-left: 5px; width: auto; font-size: 14px; border: none; border-radius: 4px; cursor: pointer; }
-        .delete-btn:hover { background-color: #c82333; }
         .logout-btn { background-color: #dc3545; margin-bottom: 20px; }
+        .security-box { background: #e9ecef; padding: 10px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #ccc; }
     </style>
 </head>
 <body>
@@ -33,8 +32,23 @@
         <label>Test Name (e.g., Mock Test 1):</label>
         <input type="text" id="testName" placeholder="Enter test name" required>
 
-        <label>Allowed Roll Nos (Leave blank for all students):</label>
+        <label>Allowed Roll Nos (Leave blank for all):</label>
         <input type="text" id="allowedRolls" placeholder="e.g. 101, 102, A105">
+
+        <!-- नया सिक्यूरिटी सेक्शन -->
+        <div class="security-box">
+            <label>🔒 Security Level (Login Method):</label>
+            <select id="authType">
+                <option value="none">Direct Start (No Password)</option>
+                <option value="pin">Custom PIN / Password</option>
+                <option value="otp">SMS OTP Verification</option>
+            </select>
+            
+            <div id="pinSection" style="display: none;">
+                <label>Set PIN for this test:</label>
+                <input type="text" id="testPin" placeholder="e.g. 1234">
+            </div>
+        </div>
 
         <label>Question:</label>
         <textarea id="questionText" rows="3" placeholder="Type your question here..." required></textarea>

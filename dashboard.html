@@ -19,7 +19,7 @@
         .edit-btn { background-color: #ffc107; color: #333; padding: 8px; margin-top: 10px; width: auto; font-size: 14px; border: none; border-radius: 4px; cursor: pointer; }
         .delete-btn { background-color: #dc3545; color: white; padding: 8px; margin-top: 10px; margin-left: 5px; width: auto; font-size: 14px; border: none; border-radius: 4px; cursor: pointer; }
         .logout-btn { background-color: #dc3545; margin-bottom: 20px; }
-        .security-box { background: #e9ecef; padding: 10px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #ccc; }
+        .security-box, .question-box-style { background: #e9ecef; padding: 15px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #ccc; }
     </style>
 </head>
 <body>
@@ -35,8 +35,7 @@
         <label>Allowed Roll Nos (Leave blank for all):</label>
         <input type="text" id="allowedRolls" placeholder="e.g. 101, 102, A105">
 
-        <!-- नया: टाइमर सेट करने का बॉक्स -->
-        <label>⏱️ Test Duration (in minutes, leave blank for no limit):</label>
+        <label>⏱️ Test Duration (in minutes, blank for no limit):</label>
         <input type="number" id="testDuration" placeholder="e.g. 30">
 
         <div class="security-box">
@@ -46,28 +45,48 @@
                 <option value="pin">Custom PIN / Password</option>
                 <option value="otp">SMS OTP Verification</option>
             </select>
-            
             <div id="pinSection" style="display: none;">
                 <label>Set PIN for this test:</label>
                 <input type="text" id="testPin" placeholder="e.g. 1234">
             </div>
         </div>
 
-        <label>Question:</label>
-        <textarea id="questionText" rows="3" placeholder="Type your question here..." required></textarea>
-        
-        <label>Option A:</label><input type="text" id="optA" required>
-        <label>Option B:</label><input type="text" id="optB" required>
-        <label>Option C:</label><input type="text" id="optC" required>
-        <label>Option D:</label><input type="text" id="optD" required>
-        
-        <label>Correct Answer:</label>
-        <select id="correctOption">
-            <option value="A">Option A</option>
-            <option value="B">Option B</option>
-            <option value="C">Option C</option>
-            <option value="D">Option D</option>
-        </select>
+        <div class="question-box-style">
+            <label>Question Type:</label>
+            <select id="qType">
+                <option value="MCQ">Multiple Choice (Options)</option>
+                <option value="SUBJECTIVE">Direct Answer (No Options)</option>
+            </select>
+
+            <label>Question Marks:</label>
+            <input type="number" id="qMarks" value="1" placeholder="Marks for this question" required>
+
+            <label>Question:</label>
+            <textarea id="questionText" rows="3" placeholder="Type your question here..." required></textarea>
+            
+            <!-- MCQ Section -->
+            <div id="mcqSection">
+                <label>Option A:</label><input type="text" id="optA">
+                <label>Option B:</label><input type="text" id="optB">
+                <label>Option C:</label><input type="text" id="optC">
+                <label>Option D:</label><input type="text" id="optD">
+                
+                <label>Correct Answer:</label>
+                <select id="correctOption">
+                    <option value="A">Option A</option>
+                    <option value="B">Option B</option>
+                    <option value="C">Option C</option>
+                    <option value="D">Option D</option>
+                </select>
+            </div>
+
+            <!-- Subjective Section (No Options) -->
+            <div id="subjSection" style="display: none;">
+                <label>Exact Correct Answer:</label>
+                <input type="text" id="subjAnswer" placeholder="Type the exact text/number answer">
+                <small style="color:#666;">(Students will have to type this exactly. Capital/Small letters won't matter.)</small>
+            </div>
+        </div>
         
         <button id="publishBtn">Publish Question</button>
         <p id="statusMessage"></p>

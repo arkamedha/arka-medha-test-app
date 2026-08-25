@@ -34,7 +34,7 @@ let globalQuestions = {};
 
 publishBtn.addEventListener("click", async () => {
     const testName = document.getElementById("testName").value;
-    const allowedRolls = document.getElementById("allowedRolls").value; // नया कोड
+    const allowedRolls = document.getElementById("allowedRolls").value; 
     const questionText = document.getElementById("questionText").value;
     const optA = document.getElementById("optA").value;
     const optB = document.getElementById("optB").value;
@@ -57,7 +57,7 @@ publishBtn.addEventListener("click", async () => {
             const questionRef = doc(db, "Tests", editId);
             await updateDoc(questionRef, {
                 testName: testName,
-                allowedRolls: allowedRolls, // नया कोड
+                allowedRolls: allowedRolls,
                 question: questionText,
                 options: { A: optA, B: optB, C: optC, D: optD },
                 answer: correctOption
@@ -68,7 +68,7 @@ publishBtn.addEventListener("click", async () => {
         } else {
             await addDoc(collection(db, "Tests"), {
                 testName: testName,
-                allowedRolls: allowedRolls, // नया कोड
+                allowedRolls: allowedRolls,
                 question: questionText,
                 options: { A: optA, B: optB, C: optC, D: optD },
                 answer: correctOption,
@@ -105,8 +105,6 @@ loadQuestionsBtn.addEventListener("click", async () => {
         querySnapshot.forEach((docSnap) => {
             const data = docSnap.data();
             globalQuestions[docSnap.id] = data; 
-            
-            // लिस्ट में यह भी दिखाएगा कि टेस्ट किसके लिए है
             let accessText = data.allowedRolls ? `(Only for: ${data.allowedRolls})` : `(For All Students)`;
 
             html += `
@@ -127,7 +125,7 @@ loadQuestionsBtn.addEventListener("click", async () => {
                 const docId = e.target.getAttribute("data-id");
                 const qData = globalQuestions[docId];
                 document.getElementById("testName").value = qData.testName;
-                document.getElementById("allowedRolls").value = qData.allowedRolls || ""; // नया कोड
+                document.getElementById("allowedRolls").value = qData.allowedRolls || ""; 
                 document.getElementById("questionText").value = qData.question;
                 document.getElementById("optA").value = qData.options.A;
                 document.getElementById("optB").value = qData.options.B;
@@ -170,12 +168,34 @@ if(viewResultsBtn) {
             let html = "";
             querySnapshot.forEach((docSnap) => {
                 const data = docSnap.data();
+                
+                let detailsHTML = "";
+                if(data.detailedResponses && data.detailedResponses.length > 0) {
+                    detailsHTML += `
+                    <details style="margin-top: 15px; background: #f1f1f1; padding: 10px; border-radius: 5px; cursor: pointer;">
+                        <summary style="font-weight: bold; color: #0056b3; outline: none;">👀 View Answer Sheet</summary>
+                        <div style="margin-top: 10px; font-size: 14px;">`;
+                        
+                    data.detailedResponses.forEach(res => {
+                        let icon = (res.selected === res.correct) ? "✅" : (res.selected === "Not Attempted" ? "⚠️" : "❌");
+                        detailsHTML += `
+                            <p style="margin-bottom: 10px; border-bottom: 1px solid #ddd; padding-bottom: 8px;">
+                                <strong>Q${res.qNum}:</strong> ${res.question}<br>
+                                Student Answer: <strong>${res.selected}</strong> ${icon} <br>
+                                <span style="color: green; font-size: 13px;">Correct Answer: Option ${res.correct}</span>
+                            </p>`;
+                    });
+                    
+                    detailsHTML += `</div></details>`;
+                }
+
                 html += `
                     <div class="saved-question" style="border-left-color: #28a745;">
                         <div style="font-weight: bold; font-size: 16px;">Student: ${data.studentName} (${data.rollNumber})</div>
                         <div style="color: #666; margin-top: 5px;"><strong>Test:</strong> ${data.testName}</div>
                         <div style="color: green; font-weight: bold; margin-top: 5px; font-size: 18px;">Score: ${data.score} / ${data.totalMarks}</div>
                         <div style="font-size: 12px; color: #999; margin-top: 5px;">Time: ${data.date}</div>
+                        ${detailsHTML}
                     </div>
                 `;
             });

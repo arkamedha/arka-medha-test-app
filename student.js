@@ -32,7 +32,7 @@ let studentRollVal = "";
 
 proceedBtn.addEventListener("click", () => {
     studentNameVal = document.getElementById("studentName").value;
-    studentRollVal = document.getElementById("studentRoll").value.trim(); // स्पेस हटाना
+    studentRollVal = document.getElementById("studentRoll").value.trim(); 
 
     if(studentNameVal === "" || studentRollVal === "") {
         document.getElementById("infoError").style.display = "block";
@@ -48,9 +48,8 @@ async function loadAvailableTests() {
     try {
         const querySnapshot = await getDocs(collection(db, "Tests"));
         testList.innerHTML = ""; 
-        
         let uniqueTests = new Set(); 
-        let testAccessMap = {}; // नया: किस टेस्ट में कौनसे रोल नंबर एलाउड हैं
+        let testAccessMap = {}; 
 
         querySnapshot.forEach((doc) => {
             const data = doc.data();
@@ -63,20 +62,13 @@ async function loadAvailableTests() {
         });
 
         let testsShown = 0;
-
         uniqueTests.forEach(testName => {
             const allowedStr = testAccessMap[testName] || "";
             let isAllowed = true;
-
-            // अगर टीचर ने रोल नंबर लिखे हैं, तो चेक करो कि इस बच्चे का रोल नंबर उसमें है या नहीं
             if (allowedStr.trim() !== "") {
                 const allowedArray = allowedStr.split(",").map(s => s.trim());
-                if (!allowedArray.includes(studentRollVal)) {
-                    isAllowed = false;
-                }
+                if (!allowedArray.includes(studentRollVal)) isAllowed = false;
             }
-
-            // अगर बच्चा एलाउड है, तभी बटन दिखाओ
             if (isAllowed) {
                 const btn = document.createElement("button");
                 btn.className = "test-btn";
@@ -90,7 +82,6 @@ async function loadAvailableTests() {
         if (testsShown === 0) {
             testList.innerHTML = "<p style='text-align:center; color:red;'>No tests available for your Roll Number.</p>";
         }
-
     } catch (error) {
         testList.innerHTML = "<p style='text-align:center; color:red;'>Error loading test list.</p>";
     }
@@ -117,7 +108,9 @@ async function startTest(selectedTestName) {
             const data = doc.data();
             const qId = doc.id;
             const qNum = totalQuestions + 1;
-            correctAnswers[qId] = data.answer; 
+            
+            // अब हम सिर्फ सही जवाब ही नहीं, बल्कि पूरा सवाल भी सेव कर रहे हैं
+            correctAnswers[qId] = { answer: data.answer, question: data.question }; 
 
             const questionHTML = `
                 <div class="question-box">
@@ -150,11 +143,26 @@ submitTestBtn.addEventListener("click", async () => {
     submitTestBtn.disabled = true;
 
     let score = 0;
+    let detailedResponses = []; // नया: स्टूडेंट की पूरी आंसर शीट
+    let qIndex = 1;
+
     for (let qId in correctAnswers) {
-        const selectedOption = document.querySelector(`input[name="${qId}"]:checked`);
-        if (selectedOption && selectedOption.value === correctAnswers[qId]) {
+        const selectedOptionNode = document.querySelector(`input[name="${qId}"]:checked`);
+        const selectedOption = selectedOptionNode ? selectedOptionNode.value : "Not Attempted";
+        const correctAnswer = correctAnswers[qId].answer;
+
+        if (selectedOption === correctAnswer) {
             score++;
         }
+
+        // हर सवाल का डेटा तैयार करना
+        detailedResponses.push({
+            qNum: qIndex,
+            question: correctAnswers[qId].question,
+            selected: selectedOption,
+            correct: correctAnswer
+        });
+        qIndex++;
     }
 
     try {
@@ -164,7 +172,8 @@ submitTestBtn.addEventListener("click", async () => {
             testName: currentTestName,
             score: score,
             totalMarks: totalQuestions,
-            date: new Date().toLocaleString()
+            date: new Date().toLocaleString(),
+            detailedResponses: detailedResponses // इस शीट को डेटाबेस में भेज रहे हैं
         });
 
         testContainer.style.display = "none";

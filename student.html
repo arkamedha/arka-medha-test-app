@@ -3,34 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Test - Arka-Medha Education</title>
+    <title>Live Tests - Arka-Medha Education</title>
     <style>
         body { font-family: Arial, sans-serif; background-color: #f4f7f6; padding: 20px; }
         .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0px 4px 15px rgba(0,0,0,0.1); }
         h2 { color: #0056b3; text-align: center; border-bottom: 2px solid #ccc; padding-bottom: 10px; }
+        .test-btn { width: 100%; padding: 15px; margin: 10px 0; background-color: #17a2b8; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; }
+        .test-btn:hover { background-color: #138496; }
         .question-box { background: #f9f9f9; padding: 15px; margin-top: 15px; border-radius: 5px; border: 1px solid #ddd; }
         .question-text { font-weight: bold; font-size: 16px; margin-bottom: 10px; }
         .option-label { display: block; margin-bottom: 8px; cursor: pointer; }
-        button { width: 100%; padding: 12px; background-color: #0056b3; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 20px; }
-        button:hover { background-color: #004494; }
+        .submit-btn { width: 100%; padding: 12px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 20px; }
+        .submit-btn:hover { background-color: #218838; }
         #resultMessage { text-align: center; font-size: 18px; font-weight: bold; margin-top: 20px; color: green; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h2>Live Test 📝</h2>
-        
-        <!-- यहाँ डेटाबेस से प्रश्न अपने आप आएँगे -->
-        <div id="testContainer">
-            <p style="text-align:center;">Loading questions from database... ⏳</p>
+        <h2>Arka-Medha Live Tests 📝</h2>
+
+        <!-- यह सेक्शन टेस्ट की लिस्ट दिखाएगा -->
+        <div id="testSelectionArea">
+            <h3 style="text-align: center;">Select a Test to Start</h3>
+            <div id="testList">
+                <p style="text-align:center;">Loading available tests... ⏳</p>
+            </div>
         </div>
 
-        <button id="submitTestBtn" style="display:none;">Submit Test</button>
-        <p id="resultMessage"></p>
+        <!-- यह सेक्शन टेस्ट शुरू होने पर सवाल दिखाएगा -->
+        <div id="examArea" style="display: none;">
+            <h3 id="currentTestHeading" style="color: #e83e8c; text-align: center;"></h3>
+            <div id="testContainer"></div>
+            <button id="submitTestBtn" class="submit-btn" style="display:none;">Submit Test</button>
+            <p id="resultMessage"></p>
+        </div>
     </div>
 
-    <!-- Firebase और Firestore की स्क्रिप्ट -->
     <script type="module" src="student.js"></script>
 
 </body>

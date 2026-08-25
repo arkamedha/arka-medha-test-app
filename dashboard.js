@@ -15,23 +15,11 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-onAuthStateChanged(auth, (user) => {
-    if (!user) {
-        alert("Access Denied! Please login first.");
-        window.location.href = "index.html";
-    }
-});
-
-document.getElementById("logoutBtn").addEventListener("click", () => {
-    signOut(auth).then(() => { window.location.href = "index.html"; });
-});
+onAuthStateChanged(auth, (user) => { if (!user) { window.location.href = "index.html"; } });
+document.getElementById("logoutBtn").addEventListener("click", () => { signOut(auth).then(() => { window.location.href = "index.html"; }); });
 
 document.getElementById("authType").addEventListener("change", (e) => {
-    if(e.target.value === "pin") {
-        document.getElementById("pinSection").style.display = "block";
-    } else {
-        document.getElementById("pinSection").style.display = "none";
-    }
+    document.getElementById("pinSection").style.display = (e.target.value === "pin") ? "block" : "none";
 });
 
 const publishBtn = document.getElementById("publishBtn");
@@ -43,6 +31,7 @@ let globalQuestions = {};
 publishBtn.addEventListener("click", async () => {
     const testName = document.getElementById("testName").value;
     const allowedRolls = document.getElementById("allowedRolls").value; 
+    const testDuration = document.getElementById("testDuration").value; // नया कोड
     const authType = document.getElementById("authType").value; 
     const testPin = document.getElementById("testPin").value; 
     
@@ -60,12 +49,6 @@ publishBtn.addEventListener("click", async () => {
         return;
     }
     
-    if (authType === "pin" && testPin === "") {
-        statusMessage.innerText = "Please enter a PIN! ❌";
-        statusMessage.style.color = "red";
-        return;
-    }
-
     statusMessage.innerText = "Saving... ⏳";
     statusMessage.style.color = "blue";
 
@@ -73,7 +56,7 @@ publishBtn.addEventListener("click", async () => {
         if (editId !== "") {
             const questionRef = doc(db, "Tests", editId);
             await updateDoc(questionRef, {
-                testName: testName, allowedRolls: allowedRolls, authType: authType, testPin: testPin,
+                testName, allowedRolls, testDuration, authType, testPin,
                 question: questionText, options: { A: optA, B: optB, C: optC, D: optD }, answer: correctOption
             });
             statusMessage.innerText = "Updated Successfully! ✅";
@@ -81,7 +64,7 @@ publishBtn.addEventListener("click", async () => {
             publishBtn.innerText = "Publish Question"; 
         } else {
             await addDoc(collection(db, "Tests"), {
-                testName: testName, allowedRolls: allowedRolls, authType: authType, testPin: testPin,
+                testName, allowedRolls, testDuration, authType, testPin,
                 question: questionText, options: { A: optA, B: optB, C: optC, D: optD }, answer: correctOption, timestamp: new Date()
             });
             statusMessage.innerText = "Published Successfully! ✅";
@@ -104,10 +87,7 @@ loadQuestionsBtn.addEventListener("click", async () => {
     questionListArea.innerHTML = "<p style='text-align:center;'>Loading... ⏳</p>";
     try {
         const querySnapshot = await getDocs(collection(db, "Tests"));
-        if (querySnapshot.empty) {
-            questionListArea.innerHTML = "<p style='text-align:center; color:red;'>No questions found.</p>";
-            return;
-        }
+        if (querySnapshot.empty) { questionListArea.innerHTML = "<p style='text-align:center; color:red;'>No questions found.</p>"; return; }
 
         let html = "";
         globalQuestions = {}; 
@@ -116,14 +96,11 @@ loadQuestionsBtn.addEventListener("click", async () => {
             const data = docSnap.data();
             globalQuestions[docSnap.id] = data; 
             
-            let securityBadge = "";
-            if(data.authType === "otp") securityBadge = `| 🔒 SMS OTP`;
-            else if(data.authType === "pin") securityBadge = `| 🔑 PIN: ${data.testPin}`;
-            else securityBadge = `| 🔓 Open Test`;
+            let timeText = data.testDuration ? `| ⏱️ ${data.testDuration} Mins` : "";
 
             html += `
                 <div class="saved-question">
-                    <div style="font-size: 14px; color: #666; margin-bottom: 5px;"><strong>Test:</strong> ${data.testName} <span style="color:blue;">${securityBadge}</span></div>
+                    <div style="font-size: 14px; color: #666; margin-bottom: 5px;"><strong>Test:</strong> ${data.testName} <span style="color:red;">${timeText}</span></div>
                     <div style="font-weight: bold; margin-bottom: 8px;">Q: ${data.question}</div>
                     <div style="font-size: 14px; margin-bottom: 5px;"><strong>Answer:</strong> Option ${data.answer}</div>
                     <button class="edit-btn" data-id="${docSnap.id}">✏️ Edit</button>
@@ -140,11 +117,10 @@ loadQuestionsBtn.addEventListener("click", async () => {
                 const qData = globalQuestions[docId];
                 document.getElementById("testName").value = qData.testName;
                 document.getElementById("allowedRolls").value = qData.allowedRolls || ""; 
+                document.getElementById("testDuration").value = qData.testDuration || ""; 
                 document.getElementById("authType").value = qData.authType || "none";
                 document.getElementById("testPin").value = qData.testPin || "";
-                
                 document.getElementById("authType").dispatchEvent(new Event('change'));
-
                 document.getElementById("questionText").value = qData.question;
                 document.getElementById("optA").value = qData.options.A;
                 document.getElementById("optB").value = qData.options.B;
@@ -159,16 +135,13 @@ loadQuestionsBtn.addEventListener("click", async () => {
 
         document.querySelectorAll(".delete-btn").forEach(btn => {
             btn.addEventListener("click", async (e) => {
-                const docId = e.target.getAttribute("data-id");
                 if (confirm("Are you sure you want to delete this?")) {
-                    await deleteDoc(doc(db, "Tests", docId));
+                    await deleteDoc(doc(db, "Tests", e.target.getAttribute("data-id")));
                     loadQuestionsBtn.click(); 
                 }
             });
         });
-    } catch (error) {
-        questionListArea.innerHTML = "<p style='color:red; text-align:center;'>Error loading! ❌</p>";
-    }
+    } catch (error) { questionListArea.innerHTML = "<p style='color:red; text-align:center;'>Error loading! ❌</p>"; }
 });
 
 const viewResultsBtn = document.getElementById("viewResultsBtn");
@@ -179,15 +152,12 @@ if(viewResultsBtn) {
         studentResultsArea.innerHTML = "<p style='text-align:center;'>Loading Results... ⏳</p>";
         try {
             const querySnapshot = await getDocs(collection(db, "Results"));
-            if (querySnapshot.empty) {
-                studentResultsArea.innerHTML = "<p style='text-align:center; color:red;'>No results found yet.</p>";
-                return;
-            }
+            if (querySnapshot.empty) { studentResultsArea.innerHTML = "<p style='text-align:center; color:red;'>No results found yet.</p>"; return; }
+            
             let html = "";
             querySnapshot.forEach((docSnap) => {
                 const data = docSnap.data();
-                const docId = docSnap.id; // रिजल्ट डिलीट करने के लिए ID निकाल रहे हैं
-                
+                const docId = docSnap.id; 
                 let detailsHTML = "";
                 if(data.detailedResponses && data.detailedResponses.length > 0) {
                     detailsHTML += `<details style="margin-top: 15px; background: #f1f1f1; padding: 10px; border-radius: 5px; cursor: pointer;"><summary style="font-weight: bold; color: #0056b3; outline: none;">👀 View Answer Sheet</summary><div style="margin-top: 10px; font-size: 14px;">`;
@@ -197,8 +167,6 @@ if(viewResultsBtn) {
                     });
                     detailsHTML += `</div></details>`;
                 }
-
-                // यहाँ हमने 'Delete Result' बटन जोड़ा है
                 html += `
                     <div class="saved-question" style="border-left-color: #28a745; position: relative;">
                         <div style="font-weight: bold; font-size: 16px;">Student: ${data.studentName} (${data.rollNumber})</div>
@@ -212,25 +180,14 @@ if(viewResultsBtn) {
             });
             studentResultsArea.innerHTML = html;
 
-            // रिज़ल्ट डिलीट करने का नया लॉजिक
             document.querySelectorAll(".delete-result-btn").forEach(btn => {
                 btn.addEventListener("click", async (e) => {
-                    const docId = e.target.getAttribute("data-id");
-                    if (confirm("Are you sure you want to delete this student's result? This cannot be undone.")) {
-                        try {
-                            await deleteDoc(doc(db, "Results", docId));
-                            alert("Result deleted successfully! 🗑️");
-                            viewResultsBtn.click(); // डिलीट होने के बाद लिस्ट खुद रिफ्रेश हो जाएगी
-                        } catch (error) {
-                            console.error("Error deleting result: ", error);
-                            alert("Error deleting result! ❌");
-                        }
+                    if (confirm("Delete this student's result?")) {
+                        await deleteDoc(doc(db, "Results", e.target.getAttribute("data-id")));
+                        viewResultsBtn.click(); 
                     }
                 });
             });
-
-        } catch (error) {
-            studentResultsArea.innerHTML = "<p style='color:red; text-align:center;'>Error loading results! ❌</p>";
-        }
+        } catch (error) { studentResultsArea.innerHTML = "<p style='color:red; text-align:center;'>Error loading results! ❌</p>"; }
     });
 }

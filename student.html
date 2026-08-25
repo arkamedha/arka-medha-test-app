@@ -14,10 +14,11 @@
         .back-btn { width: 100%; padding: 10px; margin-bottom: 15px; background-color: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; }
         .submit-btn { width: 100%; padding: 12px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 15px; }
         .question-box { background: #f9f9f9; padding: 15px; margin-top: 15px; border-radius: 5px; border: 1px solid #ddd; }
-        .question-text { font-weight: bold; font-size: 16px; margin-bottom: 10px; }
+        .question-text { font-weight: bold; font-size: 16px; margin-bottom: 5px; }
+        .marks-badge { display: inline-block; background: #0056b3; color: white; padding: 3px 8px; border-radius: 3px; font-size: 12px; margin-bottom: 10px; }
         .option-label { display: block; margin-bottom: 8px; cursor: pointer; }
+        .subjective-input { width: 100%; padding: 10px; border: 1px solid #aaa; border-radius: 4px; font-size: 16px; margin-top: 5px; }
         #resultMessage { text-align: center; font-size: 18px; font-weight: bold; margin-top: 20px; color: green; }
-        /* टाइमर का डिज़ाइन */
         #timerDisplay { font-size: 22px; font-weight: bold; color: #dc3545; text-align: center; margin: 15px 0; padding: 10px; background: #ffeeba; border-radius: 5px; border: 1px solid #ffc107; display: none; }
     </style>
 </head>
@@ -61,7 +62,6 @@
             <button id="backBtn" class="back-btn">⬅️ Exit Test (Unsaved)</button>
             <h3 id="currentTestHeading" style="color: #e83e8c; text-align: center;"></h3>
             
-            <!-- नया: उलटा चलने वाला टाइमर -->
             <div id="timerDisplay">⏱️ Time Left: <span id="timeRemainingText">00:00</span></div>
             
             <div id="testContainer"></div>

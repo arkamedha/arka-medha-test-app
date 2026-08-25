@@ -122,5 +122,21 @@ function submitTest(){
 }
 render();
 </script>
+ <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBUG6LDNhB8kPW4fh8XURtIBb8ZpPNsM4w",
+    authDomain: "arka-medha-test-app.firebaseapp.com",
+    projectId: "arka-medha-test-app",
+    storageBucket: "arka-medha-test-app.firebasestorage.app",
+    messagingSenderId: "249649360234",
+    appId: "1:249649360234:web:3fcd302e5115573caa8913"
+  };
+
+  const app = initializeApp(firebaseConfig);
+
+  console.log("Firebase connected successfully");
+</script>
 </body>
 </html>

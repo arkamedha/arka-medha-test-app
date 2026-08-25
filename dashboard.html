@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Dashboard - Arka-Medha</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f7f6; padding: 20px; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0px 4px 15px rgba(0,0,0,0.1); }
+        h2 { color: #0056b3; text-align: center; }
+        label { font-weight: bold; margin-top: 10px; display: block; }
+        input, select, textarea { width: 100%; padding: 10px; margin-top: 5px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; }
+        button:hover { background-color: #218838; }
+        #statusMessage { text-align: center; font-weight: bold; margin-top: 15px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Arka-Medha: Create New Test</h2>
+        
+        <label>Test Name (e.g., JEE Main Mock Test 1):</label>
+        <input type="text" id="testName" placeholder="Enter test name" required>
+
+        <label>Question:</label>
+        <textarea id="questionText" rows="3" placeholder="Type your Maths/Physics question here..." required></textarea>
+
+        <label>Option A:</label><input type="text" id="optA" required>
+        <label>Option B:</label><input type="text" id="optB" required>
+        <label>Option C:</label><input type="text" id="optC" required>
+        <label>Option D:</label><input type="text" id="optD" required>
+
+        <label>Correct Answer:</label>
+        <select id="correctOption">
+            <option value="A">Option A</option>
+            <option value="B">Option B</option>
+            <option value="C">Option C</option>
+            <option value="D">Option D</option>
+        </select>
+
+        <button id="publishBtn">Publish Question to Database</button>
+        <p id="statusMessage"></p>
+    </div>
+
+    <!-- Firebase और Firestore की स्क्रिप्ट -->
+    <script type="module" src="dashboard.js"></script>
+
+</body>
+</html>

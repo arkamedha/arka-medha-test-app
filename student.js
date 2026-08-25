@@ -22,7 +22,7 @@ const testContainer = document.getElementById("testContainer");
 const currentTestHeading = document.getElementById("currentTestHeading");
 const submitTestBtn = document.getElementById("submitTestBtn");
 const resultMessage = document.getElementById("resultMessage");
-const backBtn = document.getElementById("backBtn"); // नया Back बटन
+const backBtn = document.getElementById("backBtn");
 
 let correctAnswers = {}; 
 let totalQuestions = 0;
@@ -32,7 +32,7 @@ let studentRollVal = "";
 
 proceedBtn.addEventListener("click", () => {
     studentNameVal = document.getElementById("studentName").value;
-    studentRollVal = document.getElementById("studentRoll").value;
+    studentRollVal = document.getElementById("studentRoll").value.trim(); // स्पेस हटाना
 
     if(studentNameVal === "" || studentRollVal === "") {
         document.getElementById("infoError").style.display = "block";
@@ -48,25 +48,49 @@ async function loadAvailableTests() {
     try {
         const querySnapshot = await getDocs(collection(db, "Tests"));
         testList.innerHTML = ""; 
-        let uniqueTests = new Set(); 
         
+        let uniqueTests = new Set(); 
+        let testAccessMap = {}; // नया: किस टेस्ट में कौनसे रोल नंबर एलाउड हैं
+
         querySnapshot.forEach((doc) => {
             const data = doc.data();
-            if(data.testName) uniqueTests.add(data.testName);
+            if(data.testName) {
+                uniqueTests.add(data.testName);
+                if(!testAccessMap[data.testName] && data.allowedRolls) {
+                    testAccessMap[data.testName] = data.allowedRolls;
+                }
+            }
         });
 
-        if (uniqueTests.size === 0) {
-            testList.innerHTML = "<p style='text-align:center; color:red;'>No tests are live right now.</p>";
-            return;
-        }
+        let testsShown = 0;
 
         uniqueTests.forEach(testName => {
-            const btn = document.createElement("button");
-            btn.className = "test-btn";
-            btn.innerText = testName;
-            btn.onclick = () => startTest(testName);
-            testList.appendChild(btn);
+            const allowedStr = testAccessMap[testName] || "";
+            let isAllowed = true;
+
+            // अगर टीचर ने रोल नंबर लिखे हैं, तो चेक करो कि इस बच्चे का रोल नंबर उसमें है या नहीं
+            if (allowedStr.trim() !== "") {
+                const allowedArray = allowedStr.split(",").map(s => s.trim());
+                if (!allowedArray.includes(studentRollVal)) {
+                    isAllowed = false;
+                }
+            }
+
+            // अगर बच्चा एलाउड है, तभी बटन दिखाओ
+            if (isAllowed) {
+                const btn = document.createElement("button");
+                btn.className = "test-btn";
+                btn.innerText = testName;
+                btn.onclick = () => startTest(testName);
+                testList.appendChild(btn);
+                testsShown++;
+            }
         });
+
+        if (testsShown === 0) {
+            testList.innerHTML = "<p style='text-align:center; color:red;'>No tests available for your Roll Number.</p>";
+        }
+
     } catch (error) {
         testList.innerHTML = "<p style='text-align:center; color:red;'>Error loading test list.</p>";
     }
@@ -76,8 +100,8 @@ async function startTest(selectedTestName) {
     currentTestName = selectedTestName;
     testSelectionArea.style.display = "none"; 
     examArea.style.display = "block"; 
-    testContainer.style.display = "block"; // ये लाइन पक्का करेगी कि सवाल दोबारा दिखें
-    resultMessage.innerHTML = ""; // पुराना रिजल्ट छुपा दें
+    testContainer.style.display = "block"; 
+    resultMessage.innerHTML = ""; 
     currentTestHeading.innerText = selectedTestName;
     testContainer.innerHTML = "<p style='text-align:center;'>Loading questions... ⏳</p>";
 
@@ -93,7 +117,6 @@ async function startTest(selectedTestName) {
             const data = doc.data();
             const qId = doc.id;
             const qNum = totalQuestions + 1;
-            
             correctAnswers[qId] = data.answer; 
 
             const questionHTML = `
@@ -117,7 +140,6 @@ async function startTest(selectedTestName) {
     }
 }
 
-// नया Back बटन का लॉजिक
 backBtn.addEventListener("click", () => {
     examArea.style.display = "none";
     testSelectionArea.style.display = "block";
@@ -149,7 +171,6 @@ submitTestBtn.addEventListener("click", async () => {
         submitTestBtn.style.display = "none";
         resultMessage.innerHTML = `Test Submitted Successfully! 🎉<br>Your Score: ${score} out of ${totalQuestions}`;
     } catch(error) {
-        console.error(error);
         alert("Error saving your result. Please try again.");
         submitTestBtn.innerText = "Submit Test";
         submitTestBtn.disabled = false;

@@ -1,5 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+// यहाँ addDoc जोड़ा गया है ताकि रिज़ल्ट सेव हो सके
+import { getFirestore, collection, getDocs, query, where, addDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBUG6LDNhB8kPW4fh8XURtIBb8ZpPNsM4w",
@@ -13,6 +14,8 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+const studentInfoArea = document.getElementById("studentInfoArea");
+const proceedBtn = document.getElementById("proceedBtn");
 const testSelectionArea = document.getElementById("testSelectionArea");
 const testList = document.getElementById("testList");
 const examArea = document.getElementById("examArea");
@@ -23,6 +26,24 @@ const resultMessage = document.getElementById("resultMessage");
 
 let correctAnswers = {}; 
 let totalQuestions = 0;
+let currentTestName = "";
+let studentNameVal = "";
+let studentRollVal = "";
+
+// जब स्टूडेंट अपना नाम डालकर Continue दबाए
+proceedBtn.addEventListener("click", () => {
+    studentNameVal = document.getElementById("studentName").value;
+    studentRollVal = document.getElementById("studentRoll").value;
+
+    if(studentNameVal === "" || studentRollVal === "") {
+        document.getElementById("infoError").style.display = "block";
+        return;
+    }
+
+    studentInfoArea.style.display = "none";
+    testSelectionArea.style.display = "block";
+    loadAvailableTests(); // नाम डालने के बाद टेस्ट लोड करें
+});
 
 async function loadAvailableTests() {
     try {
@@ -53,6 +74,7 @@ async function loadAvailableTests() {
 }
 
 async function startTest(selectedTestName) {
+    currentTestName = selectedTestName;
     testSelectionArea.style.display = "none"; 
     examArea.style.display = "block"; 
     currentTestHeading.innerText = selectedTestName;
@@ -91,9 +113,11 @@ async function startTest(selectedTestName) {
     }
 }
 
-loadAvailableTests();
+// सबमिट करने पर रिज़ल्ट डेटाबेस में भेजना
+submitTestBtn.addEventListener("click", async () => {
+    submitTestBtn.innerText = "Submitting... ⏳";
+    submitTestBtn.disabled = true;
 
-submitTestBtn.addEventListener("click", () => {
     let score = 0;
     for (let qId in correctAnswers) {
         const selectedOption = document.querySelector(`input[name="${qId}"]:checked`);
@@ -101,7 +125,25 @@ submitTestBtn.addEventListener("click", () => {
             score++;
         }
     }
-    testContainer.style.display = "none";
-    submitTestBtn.style.display = "none";
-    resultMessage.innerHTML = `Test Submitted! 🎉<br>Your Score: ${score} out of ${totalQuestions}`;
+
+    try {
+        // "Results" नाम के कलेक्शन में स्टूडेंट का डेटा सेव करना
+        await addDoc(collection(db, "Results"), {
+            studentName: studentNameVal,
+            rollNumber: studentRollVal,
+            testName: currentTestName,
+            score: score,
+            totalMarks: totalQuestions,
+            date: new Date().toLocaleString()
+        });
+
+        testContainer.style.display = "none";
+        submitTestBtn.style.display = "none";
+        resultMessage.innerHTML = `Test Submitted Successfully! 🎉<br>Your Score: ${score} out of ${totalQuestions}`;
+    } catch(error) {
+        console.error(error);
+        alert("Error saving your result. Please try again.");
+        submitTestBtn.innerText = "Submit Test";
+        submitTestBtn.disabled = false;
+    }
 });

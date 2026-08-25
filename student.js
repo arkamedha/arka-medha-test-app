@@ -1,5 +1,4 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-// यहाँ addDoc जोड़ा गया है ताकि रिज़ल्ट सेव हो सके
 import { getFirestore, collection, getDocs, query, where, addDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -23,6 +22,7 @@ const testContainer = document.getElementById("testContainer");
 const currentTestHeading = document.getElementById("currentTestHeading");
 const submitTestBtn = document.getElementById("submitTestBtn");
 const resultMessage = document.getElementById("resultMessage");
+const backBtn = document.getElementById("backBtn"); // नया Back बटन
 
 let correctAnswers = {}; 
 let totalQuestions = 0;
@@ -30,7 +30,6 @@ let currentTestName = "";
 let studentNameVal = "";
 let studentRollVal = "";
 
-// जब स्टूडेंट अपना नाम डालकर Continue दबाए
 proceedBtn.addEventListener("click", () => {
     studentNameVal = document.getElementById("studentName").value;
     studentRollVal = document.getElementById("studentRoll").value;
@@ -42,7 +41,7 @@ proceedBtn.addEventListener("click", () => {
 
     studentInfoArea.style.display = "none";
     testSelectionArea.style.display = "block";
-    loadAvailableTests(); // नाम डालने के बाद टेस्ट लोड करें
+    loadAvailableTests(); 
 });
 
 async function loadAvailableTests() {
@@ -77,6 +76,8 @@ async function startTest(selectedTestName) {
     currentTestName = selectedTestName;
     testSelectionArea.style.display = "none"; 
     examArea.style.display = "block"; 
+    testContainer.style.display = "block"; // ये लाइन पक्का करेगी कि सवाल दोबारा दिखें
+    resultMessage.innerHTML = ""; // पुराना रिजल्ट छुपा दें
     currentTestHeading.innerText = selectedTestName;
     testContainer.innerHTML = "<p style='text-align:center;'>Loading questions... ⏳</p>";
 
@@ -107,13 +108,21 @@ async function startTest(selectedTestName) {
             testContainer.innerHTML += questionHTML;
             totalQuestions++;
         });
+        
+        submitTestBtn.innerText = "Submit Test";
+        submitTestBtn.disabled = false;
         submitTestBtn.style.display = "block";
     } catch (error) {
         testContainer.innerHTML = "<p style='text-align:center; color:red;'>Error loading questions.</p>";
     }
 }
 
-// सबमिट करने पर रिज़ल्ट डेटाबेस में भेजना
+// नया Back बटन का लॉजिक
+backBtn.addEventListener("click", () => {
+    examArea.style.display = "none";
+    testSelectionArea.style.display = "block";
+});
+
 submitTestBtn.addEventListener("click", async () => {
     submitTestBtn.innerText = "Submitting... ⏳";
     submitTestBtn.disabled = true;
@@ -127,7 +136,6 @@ submitTestBtn.addEventListener("click", async () => {
     }
 
     try {
-        // "Results" नाम के कलेक्शन में स्टूडेंट का डेटा सेव करना
         await addDoc(collection(db, "Results"), {
             studentName: studentNameVal,
             rollNumber: studentRollVal,

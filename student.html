@@ -17,13 +17,14 @@
         .question-text { font-weight: bold; font-size: 16px; margin-bottom: 10px; }
         .option-label { display: block; margin-bottom: 8px; cursor: pointer; }
         #resultMessage { text-align: center; font-size: 18px; font-weight: bold; margin-top: 20px; color: green; }
+        /* टाइमर का डिज़ाइन */
+        #timerDisplay { font-size: 22px; font-weight: bold; color: #dc3545; text-align: center; margin: 15px 0; padding: 10px; background: #ffeeba; border-radius: 5px; border: 1px solid #ffc107; display: none; }
     </style>
 </head>
 <body>
     <div class="container">
         <h2>Arka-Medha Live Tests 📝</h2>
 
-        <!-- Step 1: Info -->
         <div id="studentInfoArea">
             <h3 style="text-align: center;">Enter Your Details</h3>
             <input type="text" id="studentName" placeholder="Enter Your Full Name" required>
@@ -32,40 +33,37 @@
             <p id="infoError" style="color: red; text-align: center; display: none;">Please fill both fields!</p>
         </div>
 
-        <!-- Step 2: Test List -->
         <div id="testSelectionArea" style="display: none;">
             <h3 style="text-align: center;">Select a Test to Start</h3>
             <div id="testList"><p style="text-align:center;">Loading available tests... ⏳</p></div>
         </div>
 
-        <!-- Step 3: Security Check Area -->
         <div id="securityArea" style="display: none; text-align:center;">
             <h3 id="securityHeading" style="color: #e83e8c;">Verification Required</h3>
-            
             <div id="pinDiv" style="display:none;">
                 <input type="text" id="enteredPin" placeholder="Enter Test PIN">
                 <button id="verifyPinBtn" class="submit-btn">Verify PIN</button>
             </div>
-
             <div id="otpDiv" style="display:none;">
                 <div id="recaptcha-container"></div>
                 <input type="text" id="phoneNum" placeholder="10-digit Mobile Number">
                 <button id="sendOtpBtn" class="submit-btn" style="background-color: #007bff;">Send OTP</button>
-                
                 <div id="otpInputDiv" style="display:none; margin-top:10px;">
                     <input type="text" id="otpCode" placeholder="Enter 6-digit OTP">
                     <button id="verifyOtpBtn" class="submit-btn">Verify & Start</button>
                 </div>
             </div>
-            
             <p id="securityError" style="color:red; margin-top:10px;"></p>
             <button id="cancelSecurityBtn" class="back-btn" style="margin-top:15px;">⬅️ Back to Test List</button>
         </div>
 
-        <!-- Step 4: Live Exam -->
         <div id="examArea" style="display: none;">
-            <button id="backBtn" class="back-btn">⬅️ Exit Test</button>
+            <button id="backBtn" class="back-btn">⬅️ Exit Test (Unsaved)</button>
             <h3 id="currentTestHeading" style="color: #e83e8c; text-align: center;"></h3>
+            
+            <!-- नया: उलटा चलने वाला टाइमर -->
+            <div id="timerDisplay">⏱️ Time Left: <span id="timeRemainingText">00:00</span></div>
+            
             <div id="testContainer"></div>
             <button id="submitTestBtn" class="submit-btn" style="display:none;">Submit Test</button>
             <p id="resultMessage"></p>

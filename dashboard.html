@@ -12,7 +12,10 @@
         input, select, textarea { width: 100%; padding: 10px; margin-top: 5px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
         button { width: 100%; padding: 12px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; }
         button:hover { background-color: #218838; }
+        .view-btn { background-color: #17a2b8; margin-top: 20px; }
+        .view-btn:hover { background-color: #138496; }
         #statusMessage { text-align: center; font-weight: bold; margin-top: 15px; }
+        .saved-question { background: #f9f9f9; padding: 15px; margin-top: 15px; border-left: 4px solid #0056b3; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body>
@@ -41,9 +44,16 @@
 
         <button id="publishBtn">Publish Question to Database</button>
         <p id="statusMessage"></p>
+
+        <hr style="margin: 30px 0; border: 1px solid #eee;">
+        
+        <!-- नया सेक्शन: सवाल देखने के लिए -->
+        <h2>View Saved Questions</h2>
+        <button id="loadQuestionsBtn" class="view-btn">Load My Questions</button>
+        <div id="questionListArea"></div>
+
     </div>
 
-    <!-- Firebase और Firestore की स्क्रिप्ट -->
     <script type="module" src="dashboard.js"></script>
 
 </body>

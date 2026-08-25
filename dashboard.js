@@ -1,3 +1,17 @@
+// Firebase Auth इम्पोर्ट करें (अगर पहले से नहीं है)
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+
+// app के नीचे auth डिफाइन करें (अगर नहीं है)
+const auth = getAuth(app);
+
+// सुरक्षा जाँच: चेक करें कि क्या यूजर लॉगिन है या नहीं
+onAuthStateChanged(auth, (user) => {
+    if (!user) {
+        // अगर यूजर लॉगिन नहीं है, तो तुरंत लॉगिन पेज पर भेज दें
+        alert("Access Denied! Please login first.");
+        window.location.href = "index.html";
+    }
+});
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
 // यहाँ हमने doc और updateDoc को जोड़ा है ताकि सवाल Edit हो सकें
 import { getFirestore, collection, addDoc, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";

@@ -15,7 +15,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// Security Check: If not logged in, kick out
+// 1. Security Check
 onAuthStateChanged(auth, (user) => {
     if (!user) {
         alert("Access Denied! Please login first.");
@@ -23,7 +23,7 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-// Logout Feature
+// 2. Logout Feature
 document.getElementById("logoutBtn").addEventListener("click", () => {
     signOut(auth).then(() => {
         window.location.href = "index.html";
@@ -36,6 +36,7 @@ const loadQuestionsBtn = document.getElementById("loadQuestionsBtn");
 const questionListArea = document.getElementById("questionListArea");
 let globalQuestions = {}; 
 
+// 3. Publish & Update Question
 publishBtn.addEventListener("click", async () => {
     const testName = document.getElementById("testName").value;
     const questionText = document.getElementById("questionText").value;
@@ -83,7 +84,7 @@ publishBtn.addEventListener("click", async () => {
         document.getElementById("optB").value = "";
         document.getElementById("optC").value = "";
         document.getElementById("optD").value = "";
-        loadQuestionsBtn.click(); // Auto-refresh list
+        loadQuestionsBtn.click(); 
 
     } catch (error) {
         statusMessage.innerText = "Error saving! ❌";
@@ -91,6 +92,7 @@ publishBtn.addEventListener("click", async () => {
     }
 });
 
+// 4. Load & View Questions
 loadQuestionsBtn.addEventListener("click", async () => {
     questionListArea.innerHTML = "<p style='text-align:center;'>Loading... ⏳</p>";
     try {
@@ -119,6 +121,7 @@ loadQuestionsBtn.addEventListener("click", async () => {
         
         questionListArea.innerHTML = html;
 
+        // Edit Button Action
         document.querySelectorAll(".edit-btn").forEach(btn => {
             btn.addEventListener("click", (e) => {
                 const docId = e.target.getAttribute("data-id");
@@ -136,12 +139,13 @@ loadQuestionsBtn.addEventListener("click", async () => {
             });
         });
 
+        // Delete Button Action
         document.querySelectorAll(".delete-btn").forEach(btn => {
             btn.addEventListener("click", async (e) => {
                 const docId = e.target.getAttribute("data-id");
                 if (confirm("Are you sure you want to delete this?")) {
                     await deleteDoc(doc(db, "Tests", docId));
-                    loadQuestionsBtn.click(); // Auto-refresh list
+                    loadQuestionsBtn.click(); 
                 }
             });
         });
@@ -150,39 +154,41 @@ loadQuestionsBtn.addEventListener("click", async () => {
         questionListArea.innerHTML = "<p style='color:red; text-align:center;'>Error loading! ❌</p>";
     }
 });
-// 3. स्टूडेंट्स के रिज़ल्ट देखने का लॉजिक
+
+// 5. Load Student Results
 const viewResultsBtn = document.getElementById("viewResultsBtn");
 const studentResultsArea = document.getElementById("studentResultsArea");
 
-viewResultsBtn.addEventListener("click", async () => {
-    studentResultsArea.innerHTML = "<p style='text-align:center;'>Loading Results... ⏳</p>";
-    
-    try {
-        // डेटाबेस से "Results" मंगाना
-        const querySnapshot = await getDocs(collection(db, "Results"));
+if(viewResultsBtn) {
+    viewResultsBtn.addEventListener("click", async () => {
+        studentResultsArea.innerHTML = "<p style='text-align:center;'>Loading Results... ⏳</p>";
         
-        if (querySnapshot.empty) {
-            studentResultsArea.innerHTML = "<p style='text-align:center; color:red;'>No results found yet.</p>";
-            return;
+        try {
+            const querySnapshot = await getDocs(collection(db, "Results"));
+            
+            if (querySnapshot.empty) {
+                studentResultsArea.innerHTML = "<p style='text-align:center; color:red;'>No results found yet.</p>";
+                return;
+            }
+
+            let html = "";
+            querySnapshot.forEach((docSnap) => {
+                const data = docSnap.data();
+                html += `
+                    <div class="saved-question" style="border-left-color: #28a745;">
+                        <div style="font-weight: bold; font-size: 16px;">Student: ${data.studentName} (${data.rollNumber})</div>
+                        <div style="color: #666; margin-top: 5px;"><strong>Test:</strong> ${data.testName}</div>
+                        <div style="color: green; font-weight: bold; margin-top: 5px; font-size: 18px;">Score: ${data.score} / ${data.totalMarks}</div>
+                        <div style="font-size: 12px; color: #999; margin-top: 5px;">Time: ${data.date}</div>
+                    </div>
+                `;
+            });
+            
+            studentResultsArea.innerHTML = html;
+
+        } catch (error) {
+            console.error("Error loading results: ", error);
+            studentResultsArea.innerHTML = "<p style='color:red; text-align:center;'>Error loading results! ❌</p>";
         }
-
-        let html = "";
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            html += `
-                <div class="saved-question" style="border-left-color: #28a745;">
-                    <div style="font-weight: bold; font-size: 16px;">Student: ${data.studentName} (${data.rollNumber})</div>
-                    <div style="color: #666; margin-top: 5px;"><strong>Test:</strong> ${data.testName}</div>
-                    <div style="color: green; font-weight: bold; margin-top: 5px; font-size: 18px;">Score: ${data.score} / ${data.totalMarks}</div>
-                    <div style="font-size: 12px; color: #999; margin-top: 5px;">Time: ${data.date}</div>
-                </div>
-            `;
-        });
-        
-        studentResultsArea.innerHTML = html;
-
-    } catch (error) {
-        console.error("Error loading results: ", error);
-        studentResultsArea.innerHTML = "<p style='color:red; text-align:center;'>Error loading results! ❌</p>";
-    }
-});
+    });
+}

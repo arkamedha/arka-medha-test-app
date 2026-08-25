@@ -42,6 +42,7 @@ loginBtn.addEventListener("click", () => {
         .then((userCredential) => {
             const user = userCredential.user;
             messageDisplay.innerText = "Login Successful! ✅";
+            window.location.href = "dashboard.html";
             messageDisplay.style.color = "green";
             console.log("Logged in user:", user.email);
             // अगले स्टेप में हम यहाँ से यूज़र को 'Test Dashboard' पर भेजेंगे

@@ -22,16 +22,18 @@ const testList = document.getElementById("testList");
 const securityArea = document.getElementById("securityArea");
 const examArea = document.getElementById("examArea");
 const testContainer = document.getElementById("testContainer");
+const submitTestBtn = document.getElementById("submitTestBtn");
 
 let currentTestName = "";
 let studentNameVal = "";
 let studentRollVal = "";
 let correctAnswers = {}; 
 let totalQuestions = 0;
+let timerInterval; // टाइमर का वेरिएबल
 
-// ग्लोबल मैप जो टेस्ट की सिक्यूरिटी याद रखेगा
 let testAuthTypeMap = {}; 
 let testPinMap = {}; 
+let testDurationMap = {}; // नया: टेस्ट का टाइम याद रखने के लिए
 
 proceedBtn.addEventListener("click", () => {
     studentNameVal = document.getElementById("studentName").value;
@@ -59,6 +61,7 @@ async function loadAvailableTests() {
                 if(!testAccessMap[data.testName] && data.allowedRolls) testAccessMap[data.testName] = data.allowedRolls;
                 if(!testAuthTypeMap[data.testName] && data.authType) testAuthTypeMap[data.testName] = data.authType;
                 if(!testPinMap[data.testName] && data.testPin) testPinMap[data.testName] = data.testPin;
+                if(!testDurationMap[data.testName] && data.testDuration) testDurationMap[data.testName] = data.testDuration;
             }
         });
 
@@ -86,16 +89,14 @@ async function loadAvailableTests() {
     }
 }
 
-// यह फंक्शन चेक करेगा कि टेस्ट खोलने के लिए पासवर्ड चाहिए या OTP
 function handleTestClick(testName) {
     currentTestName = testName;
     const authType = testAuthTypeMap[testName] || "none";
-    
     testSelectionArea.style.display = "none";
     document.getElementById("securityError").innerText = "";
 
     if (authType === "none") {
-        startTest(testName); // सीधा टेस्ट शुरू
+        startTest(testName); 
     } else if (authType === "pin") {
         securityArea.style.display = "block";
         document.getElementById("pinDiv").style.display = "block";
@@ -109,12 +110,8 @@ function handleTestClick(testName) {
     }
 }
 
-// 1. PIN Verify Logic
 document.getElementById("verifyPinBtn").addEventListener("click", () => {
-    const enteredPin = document.getElementById("enteredPin").value;
-    const correctPin = testPinMap[currentTestName];
-    
-    if(enteredPin === correctPin) {
+    if(document.getElementById("enteredPin").value === testPinMap[currentTestName]) {
         securityArea.style.display = "none";
         startTest(currentTestName);
     } else {
@@ -122,42 +119,26 @@ document.getElementById("verifyPinBtn").addEventListener("click", () => {
     }
 });
 
-// 2. OTP Verify Logic (Phone Auth)
+// OTP Logic (Phone Auth)
 document.getElementById("sendOtpBtn").addEventListener("click", () => {
     const phoneNum = document.getElementById("phoneNum").value;
-    if(phoneNum.length < 10) {
-        document.getElementById("securityError").innerText = "Enter valid 10-digit number.";
-        return;
-    }
+    if(phoneNum.length < 10) return;
     document.getElementById("securityError").innerText = "Sending OTP... ⏳";
-    
     window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', { 'size': 'invisible' });
-    
     signInWithPhoneNumber(auth, "+91" + phoneNum, window.recaptchaVerifier)
-        .then((confirmationResult) => {
-            window.confirmationResult = confirmationResult;
-            document.getElementById("securityError").innerText = "OTP Sent Successfully! ✅";
-            document.getElementById("securityError").style.color = "green";
+        .then((result) => {
+            window.confirmationResult = result;
+            document.getElementById("securityError").innerText = "OTP Sent! ✅";
             document.getElementById("sendOtpBtn").style.display = "none";
             document.getElementById("otpInputDiv").style.display = "block";
-        }).catch((error) => {
-            document.getElementById("securityError").innerText = "Error sending OTP. Please refresh and try again.";
-            console.error(error);
-        });
+        }).catch((err) => { document.getElementById("securityError").innerText = "Error sending OTP."; });
 });
 
 document.getElementById("verifyOtpBtn").addEventListener("click", () => {
-    const code = document.getElementById("otpCode").value;
-    document.getElementById("securityError").innerText = "Verifying... ⏳";
-    document.getElementById("securityError").style.color = "blue";
-
-    confirmationResult.confirm(code).then((result) => {
+    confirmationResult.confirm(document.getElementById("otpCode").value).then(() => {
         securityArea.style.display = "none";
         startTest(currentTestName);
-    }).catch((error) => {
-        document.getElementById("securityError").innerText = "Invalid OTP! ❌";
-        document.getElementById("securityError").style.color = "red";
-    });
+    }).catch(() => { document.getElementById("securityError").innerText = "Invalid OTP! ❌"; });
 });
 
 document.getElementById("cancelSecurityBtn").addEventListener("click", () => {
@@ -165,19 +146,29 @@ document.getElementById("cancelSecurityBtn").addEventListener("click", () => {
     testSelectionArea.style.display = "block";
 });
 
-// 3. Start Exam (After Security Check)
+// टाइमर अपडेट करने का फंक्शन
+function updateTimerUI(seconds) {
+    let m = Math.floor(seconds / 60);
+    let s = seconds % 60;
+    document.getElementById("timeRemainingText").innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+}
+
 async function startTest(selectedTestName) {
     examArea.style.display = "block"; 
-    document.getElementById("testContainer").style.display = "block"; 
+    testContainer.style.display = "block"; 
     document.getElementById("resultMessage").innerHTML = ""; 
     document.getElementById("currentTestHeading").innerText = selectedTestName;
-    document.getElementById("testContainer").innerHTML = "<p style='text-align:center;'>Loading questions... ⏳</p>";
+    testContainer.innerHTML = "<p style='text-align:center;'>Loading questions... ⏳</p>";
+    
+    // पुराना टाइमर बंद करें और छुपायें
+    clearInterval(timerInterval);
+    document.getElementById("timerDisplay").style.display = "none";
 
     try {
         const q = query(collection(db, "Tests"), where("testName", "==", selectedTestName));
         const querySnapshot = await getDocs(q);
         
-        document.getElementById("testContainer").innerHTML = "";
+        testContainer.innerHTML = "";
         correctAnswers = {};
         totalQuestions = 0;
 
@@ -185,7 +176,6 @@ async function startTest(selectedTestName) {
             const data = doc.data();
             const qId = doc.id;
             const qNum = totalQuestions + 1;
-            
             correctAnswers[qId] = { answer: data.answer, question: data.question }; 
 
             const questionHTML = `
@@ -197,26 +187,50 @@ async function startTest(selectedTestName) {
                     <label class="option-label"><input type="radio" name="${qId}" value="D"> ${data.options.D}</label>
                 </div>
             `;
-            document.getElementById("testContainer").innerHTML += questionHTML;
+            testContainer.innerHTML += questionHTML;
             totalQuestions++;
         });
         
-        document.getElementById("submitTestBtn").innerText = "Submit Test";
-        document.getElementById("submitTestBtn").disabled = false;
-        document.getElementById("submitTestBtn").style.display = "block";
+        submitTestBtn.innerText = "Submit Test";
+        submitTestBtn.disabled = false;
+        submitTestBtn.style.display = "block";
+
+        // नया: टाइमर शुरू करने का लॉजिक
+        const durationStr = testDurationMap[selectedTestName];
+        if (durationStr && parseInt(durationStr) > 0) {
+            document.getElementById("timerDisplay").style.display = "block";
+            let timeRemaining = parseInt(durationStr) * 60; // मिनट्स को सेकंड्स में बदला
+            
+            updateTimerUI(timeRemaining);
+            
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                updateTimerUI(timeRemaining);
+                
+                // अगर टाइम 0 हो जाए
+                if (timeRemaining <= 0) {
+                    clearInterval(timerInterval);
+                    alert("⏱️ Time is up! Your test is being automatically submitted.");
+                    submitTestBtn.click(); // ऑटो-सबमिट!
+                }
+            }, 1000);
+        }
+
     } catch (error) {
-        document.getElementById("testContainer").innerHTML = "<p style='text-align:center; color:red;'>Error loading questions.</p>";
+        testContainer.innerHTML = "<p style='text-align:center; color:red;'>Error loading questions.</p>";
     }
 }
 
 document.getElementById("backBtn").addEventListener("click", () => {
+    clearInterval(timerInterval); // बीच में छोड़ा तो टाइमर बंद
     examArea.style.display = "none";
     testSelectionArea.style.display = "block";
 });
 
-document.getElementById("submitTestBtn").addEventListener("click", async () => {
-    document.getElementById("submitTestBtn").innerText = "Submitting... ⏳";
-    document.getElementById("submitTestBtn").disabled = true;
+submitTestBtn.addEventListener("click", async () => {
+    clearInterval(timerInterval); // सबमिट करते ही टाइमर बंद
+    submitTestBtn.innerText = "Submitting... ⏳";
+    submitTestBtn.disabled = true;
 
     let score = 0;
     let detailedResponses = []; 
@@ -239,12 +253,13 @@ document.getElementById("submitTestBtn").addEventListener("click", async () => {
             score: score, totalMarks: totalQuestions, date: new Date().toLocaleString(), detailedResponses: detailedResponses
         });
 
-        document.getElementById("testContainer").style.display = "none";
-        document.getElementById("submitTestBtn").style.display = "none";
+        testContainer.style.display = "none";
+        submitTestBtn.style.display = "none";
+        document.getElementById("timerDisplay").style.display = "none"; // टाइमर छुपा दें
         document.getElementById("resultMessage").innerHTML = `Test Submitted Successfully! 🎉<br>Your Score: ${score} out of ${totalQuestions}`;
     } catch(error) {
         alert("Error saving your result. Please try again.");
-        document.getElementById("submitTestBtn").innerText = "Submit Test";
-        document.getElementById("submitTestBtn").disabled = false;
+        submitTestBtn.innerText = "Submit Test";
+        submitTestBtn.disabled = false;
     }
 });

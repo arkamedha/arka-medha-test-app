@@ -12,12 +12,10 @@
         .test-btn { width: 100%; padding: 15px; margin: 10px 0; background-color: #17a2b8; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; }
         .test-btn:hover { background-color: #138496; }
         .back-btn { width: 100%; padding: 10px; margin-bottom: 15px; background-color: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; }
-        .back-btn:hover { background-color: #5a6268; }
+        .submit-btn { width: 100%; padding: 12px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 15px; }
         .question-box { background: #f9f9f9; padding: 15px; margin-top: 15px; border-radius: 5px; border: 1px solid #ddd; }
         .question-text { font-weight: bold; font-size: 16px; margin-bottom: 10px; }
         .option-label { display: block; margin-bottom: 8px; cursor: pointer; }
-        .submit-btn { width: 100%; padding: 12px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 20px; }
-        .submit-btn:hover { background-color: #218838; }
         #resultMessage { text-align: center; font-size: 18px; font-weight: bold; margin-top: 20px; color: green; }
     </style>
 </head>
@@ -25,23 +23,48 @@
     <div class="container">
         <h2>Arka-Medha Live Tests 📝</h2>
 
+        <!-- Step 1: Info -->
         <div id="studentInfoArea">
             <h3 style="text-align: center;">Enter Your Details</h3>
             <input type="text" id="studentName" placeholder="Enter Your Full Name" required>
-            <input type="text" id="studentRoll" placeholder="Roll Number / Mobile No." required>
+            <input type="text" id="studentRoll" placeholder="Roll Number" required>
             <button id="proceedBtn" class="submit-btn" style="background-color: #0056b3;">Continue to Tests</button>
             <p id="infoError" style="color: red; text-align: center; display: none;">Please fill both fields!</p>
         </div>
 
+        <!-- Step 2: Test List -->
         <div id="testSelectionArea" style="display: none;">
             <h3 style="text-align: center;">Select a Test to Start</h3>
-            <div id="testList">
-                <p style="text-align:center;">Loading available tests... ⏳</p>
-            </div>
+            <div id="testList"><p style="text-align:center;">Loading available tests... ⏳</p></div>
         </div>
 
+        <!-- Step 3: Security Check Area -->
+        <div id="securityArea" style="display: none; text-align:center;">
+            <h3 id="securityHeading" style="color: #e83e8c;">Verification Required</h3>
+            
+            <div id="pinDiv" style="display:none;">
+                <input type="text" id="enteredPin" placeholder="Enter Test PIN">
+                <button id="verifyPinBtn" class="submit-btn">Verify PIN</button>
+            </div>
+
+            <div id="otpDiv" style="display:none;">
+                <div id="recaptcha-container"></div>
+                <input type="text" id="phoneNum" placeholder="10-digit Mobile Number">
+                <button id="sendOtpBtn" class="submit-btn" style="background-color: #007bff;">Send OTP</button>
+                
+                <div id="otpInputDiv" style="display:none; margin-top:10px;">
+                    <input type="text" id="otpCode" placeholder="Enter 6-digit OTP">
+                    <button id="verifyOtpBtn" class="submit-btn">Verify & Start</button>
+                </div>
+            </div>
+            
+            <p id="securityError" style="color:red; margin-top:10px;"></p>
+            <button id="cancelSecurityBtn" class="back-btn" style="margin-top:15px;">⬅️ Back to Test List</button>
+        </div>
+
+        <!-- Step 4: Live Exam -->
         <div id="examArea" style="display: none;">
-            <button id="backBtn" class="back-btn">⬅️ Back to Test List</button>
+            <button id="backBtn" class="back-btn">⬅️ Exit Test</button>
             <h3 id="currentTestHeading" style="color: #e83e8c; text-align: center;"></h3>
             <div id="testContainer"></div>
             <button id="submitTestBtn" class="submit-btn" style="display:none;">Submit Test</button>

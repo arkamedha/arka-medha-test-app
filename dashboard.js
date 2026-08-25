@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-// यहाँ getDocs जोड़ा गया है ताकि हम डेटाबेस से सवाल वापस पढ़ सकें
-import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+// यहाँ हमने doc और updateDoc को जोड़ा है ताकि सवाल Edit हो सकें
+import { getFirestore, collection, addDoc, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBUG6LDNhB8kPW4fh8XURtIBb8ZpPNsM4w",
@@ -19,7 +19,9 @@ const statusMessage = document.getElementById("statusMessage");
 const loadQuestionsBtn = document.getElementById("loadQuestionsBtn");
 const questionListArea = document.getElementById("questionListArea");
 
-// 1. सवाल पब्लिश करने का लॉजिक
+let globalQuestions = {}; // लोड किए गए सवालों को यहाँ सेव करेंगे
+
+// 1. सवाल पब्लिश या अपडेट करने का लॉजिक
 publishBtn.addEventListener("click", async () => {
     const testName = document.getElementById("testName").value;
     const questionText = document.getElementById("questionText").value;
@@ -28,6 +30,8 @@ publishBtn.addEventListener("click", async () => {
     const optC = document.getElementById("optC").value;
     const optD = document.getElementById("optD").value;
     const correctOption = document.getElementById("correctOption").value;
+    
+    const editId = document.getElementById("editDocId").value; // छुपी हुई ID लाएँ
 
     if (!testName || !questionText || !optA || !optB || !optC || !optD) {
         statusMessage.innerText = "Please fill all fields! ❌";
@@ -39,18 +43,31 @@ publishBtn.addEventListener("click", async () => {
     statusMessage.style.color = "blue";
 
     try {
-        await addDoc(collection(db, "Tests"), {
-            testName: testName,
-            question: questionText,
-            options: { A: optA, B: optB, C: optC, D: optD },
-            answer: correctOption,
-            timestamp: new Date()
-        });
-
-        statusMessage.innerText = "Question Published Successfully! ✅";
-        statusMessage.style.color = "green";
+        if (editId !== "") {
+            // अगर Edit हो रहा है, तो सवाल को Update करें
+            const questionRef = doc(db, "Tests", editId);
+            await updateDoc(questionRef, {
+                testName: testName,
+                question: questionText,
+                options: { A: optA, B: optB, C: optC, D: optD },
+                answer: correctOption
+            });
+            statusMessage.innerText = "Question Updated Successfully! ✅";
+            document.getElementById("editDocId").value = ""; // ID खाली कर दें
+            publishBtn.innerText = "Publish Question to Database"; // बटन का नाम वापस बदलें
+        } else {
+            // अगर नया सवाल है, तो नया जोड़ें
+            await addDoc(collection(db, "Tests"), {
+                testName: testName,
+                question: questionText,
+                options: { A: optA, B: optB, C: optC, D: optD },
+                answer: correctOption,
+                timestamp: new Date()
+            });
+            statusMessage.innerText = "Question Published Successfully! ✅";
+        }
         
-        // फॉर्म खाली करें (Test Name खाली नहीं कर रहे ताकि उसी टेस्ट के और सवाल जल्दी डाले जा सकें)
+        // फॉर्म खाली करें
         document.getElementById("questionText").value = "";
         document.getElementById("optA").value = "";
         document.getElementById("optB").value = "";
@@ -64,7 +81,7 @@ publishBtn.addEventListener("click", async () => {
     }
 });
 
-// 2. डाले हुए सवाल देखने का नया लॉजिक
+// 2. डाले हुए सवाल देखने और Edit बटन लगाने का लॉजिक
 loadQuestionsBtn.addEventListener("click", async () => {
     questionListArea.innerHTML = "<p style='text-align:center;'>Loading questions... ⏳</p>";
     
@@ -77,18 +94,48 @@ loadQuestionsBtn.addEventListener("click", async () => {
         }
 
         let html = "";
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
+        globalQuestions = {}; // पुरानी लिस्ट खाली करें
+
+        querySnapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            globalQuestions[docSnap.id] = data; // सवाल को ग्लोबल लिस्ट में सेव करें
+
             html += `
                 <div class="saved-question">
                     <div style="font-size: 14px; color: #666; margin-bottom: 5px;"><strong>Test:</strong> ${data.testName}</div>
                     <div style="font-weight: bold; margin-bottom: 8px;">Q: ${data.question}</div>
-                    <div style="font-size: 14px;"><strong>Correct Answer:</strong> Option ${data.answer}</div>
+                    <div style="font-size: 14px; margin-bottom: 5px;"><strong>Correct Answer:</strong> Option ${data.answer}</div>
+                    <button class="edit-btn" data-id="${docSnap.id}">✏️ Edit Question</button>
                 </div>
             `;
         });
         
         questionListArea.innerHTML = html;
+
+        // 3. Edit बटन पर क्लिक होने पर फॉर्म में डेटा भरना
+        const editButtons = document.querySelectorAll(".edit-btn");
+        editButtons.forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                const docId = e.target.getAttribute("data-id");
+                const qData = globalQuestions[docId];
+
+                // फॉर्म के अंदर पुराना डेटा भरें
+                document.getElementById("testName").value = qData.testName;
+                document.getElementById("questionText").value = qData.question;
+                document.getElementById("optA").value = qData.options.A;
+                document.getElementById("optB").value = qData.options.B;
+                document.getElementById("optC").value = qData.options.C;
+                document.getElementById("optD").value = qData.options.D;
+                document.getElementById("correctOption").value = qData.answer;
+
+                // छुपे हुए बॉक्स में ID सेट करें और बटन का नाम बदलें
+                document.getElementById("editDocId").value = docId;
+                document.getElementById("publishBtn").innerText = "Update Changed Question";
+                
+                // पेज को वापस ऊपर (फॉर्म की तरफ) ले जाएँ
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            });
+        });
 
     } catch (error) {
         console.error("Error loading questions: ", error);

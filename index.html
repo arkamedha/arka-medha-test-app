@@ -1,142 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EM Coaching Classes - Test App</title>
-<style>
-*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f4f7fb;color:#172033}
-header{background:#14213d;color:#fff;padding:18px 24px;display:flex;justify-content:space-between;align-items:center}
-header h1{margin:0;font-size:22px}.badge{background:#fca311;padding:6px 10px;border-radius:15px;color:#111;font-size:12px;font-weight:bold}
-.container{max-width:1100px;margin:25px auto;padding:0 16px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-.card{background:#fff;border-radius:14px;padding:20px;box-shadow:0 5px 20px #00000012;margin-bottom:20px}
-h2{margin-top:0}.tabs button,.btn{border:0;border-radius:9px;padding:11px 15px;margin:4px;cursor:pointer;font-weight:bold}
-.primary{background:#14213d;color:#fff}.success{background:#2a9d8f;color:#fff}.danger{background:#e63946;color:#fff}.light{background:#e9eef5}
-input,select,textarea{width:100%;padding:11px;margin:7px 0 14px;border:1px solid #ccd5e0;border-radius:8px;font-size:15px}
-.question{border:1px solid #e0e6ee;border-radius:10px;padding:15px;margin:12px 0}
-.option{display:block;padding:9px;background:#f7f9fc;border-radius:7px;margin:7px 0;cursor:pointer}
-.hidden{display:none}.test-item{display:flex;justify-content:space-between;align-items:center;padding:14px;border:1px solid #e0e6ee;border-radius:10px;margin:10px 0}
-.live{color:#198754;font-weight:bold}.small{font-size:13px;color:#667085}
-#timer{font-size:20px;font-weight:bold;color:#e63946}
-@media(max-width:750px){.grid{grid-template-columns:1fr}header{gap:10px;flex-wrap:wrap}}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arka-Medha Test App</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-box { background: white; padding: 30px; border-radius: 10px; box-shadow: 0px 4px 15px rgba(0,0,0,0.1); width: 320px; text-align: center; }
+        .login-box h2 { color: #333; margin-bottom: 20px; }
+        input { width: 90%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; }
+        button { width: 100%; padding: 12px; background-color: #0056b3; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-top: 10px; }
+        button:hover { background-color: #004494; }
+        #message { margin-top: 15px; font-size: 14px; font-weight: bold; }
+    </style>
 </head>
 <body>
-<header><h1>EM Coaching Classes — Test Portal</h1><span class="badge">PROTOTYPE</span></header>
-<div class="container">
-<div class="tabs">
-<button class="btn primary" onclick="show('admin')">Admin / Teacher</button>
-<button class="btn success" onclick="show('student')">Student</button>
-</div>
 
-<section id="admin">
-<div class="grid">
-<div class="card">
-<h2>Create Test</h2>
-<label>Test Name</label><input id="testName" placeholder="e.g. Class 11 Physics Test 1">
-<label>Class</label><select id="testClass"><option>9th</option><option>10th</option><option>11th</option><option>12th</option></select>
-<label>Subject</label><select id="subject"><option>Physics</option><option>Chemistry</option><option>Mathematics</option><option>Biology</option></select>
-<label>Duration (minutes)</label><input id="duration" type="number" value="30">
-<label>Questions (one per line: question | option1 | option2 | option3 | option4 | correct option number)</label>
-<textarea id="questions" rows="10" placeholder="2+2=? | 3 | 4 | 5 | 6 | 2&#10;Capital of India? | Delhi | Mumbai | Bhopal | Pune | 1"></textarea>
-<button class="btn primary" onclick="createTest()">Create Test</button>
-</div>
-<div class="card">
-<h2>Tests</h2>
-<div id="adminTests"></div>
-</div>
-</div>
-</section>
+    <div class="login-box">
+        <h2>Arka-Medha Login</h2>
+        <input type="email" id="email" placeholder="Enter Email" required>
+        <input type="password" id="password" placeholder="Enter Password" required>
+        <button id="loginBtn">Login to Portal</button>
+        <p id="message"></p>
+    </div>
 
-<section id="student" class="hidden">
-<div class="card">
-<h2>Student Dashboard</h2>
-<p class="small">Live tests published by the teacher appear below.</p>
-<div id="studentTests"></div>
-</div>
-<div id="testArea" class="card hidden">
-<div style="display:flex;justify-content:space-between;align-items:center">
-<h2 id="runningTitle"></h2><span id="timer"></span>
-</div>
-<div id="questionsArea"></div>
-<button class="btn success" onclick="submitTest()">Submit Test</button>
-</div>
-<div id="resultArea" class="card hidden"></div>
-</section>
-</div>
+    <!-- यहाँ हम अपनी Javascript फाइल को जोड़ रहे हैं -->
+    <script type="module" src="app.js"></script>
 
-<script>
-let tests = JSON.parse(localStorage.getItem('emTests') || '[]');
-let current = null, timer = null, seconds = 0;
-
-function save(){localStorage.setItem('emTests',JSON.stringify(tests)); render();}
-function show(id){
- document.getElementById('admin').classList.toggle('hidden',id!=='admin');
- document.getElementById('student').classList.toggle('hidden',id!=='student');
- render();
-}
-function createTest(){
- const name=document.getElementById('testName').value.trim();
- const raw=document.getElementById('questions').value.trim();
- if(!name || !raw){alert('Test name aur questions bhariye.');return}
- const qs=raw.split('\\n').filter(Boolean).map(line=>{
-   const p=line.split('|').map(x=>x.trim());
-   return {q:p[0], options:p.slice(1,5), correct:Number(p[5]||1)-1};
- });
- tests.push({id:Date.now(),name,cls:document.getElementById('testClass').value,
- subject:document.getElementById('subject').value,duration:Number(document.getElementById('duration').value)||30,
- questions:qs,published:false});
- save(); alert('Test create ho gaya. Ab Publish karke students ke liye live karein.');
- document.getElementById('testName').value='';document.getElementById('questions').value='';
-}
-function publish(id){
- const t=tests.find(x=>x.id===id); if(t){t.published=!t.published;save();}
-}
-function render(){
- document.getElementById('adminTests').innerHTML=tests.length?tests.map(t=>`
- <div class="test-item"><div><b>${t.name}</b><div class="small">${t.cls} • ${t.subject} • ${t.questions.length} questions • ${t.duration} min</div></div>
- <div><span class="${t.published?'live':''}">${t.published?'● LIVE':'DRAFT'}</span>
- <button class="btn ${t.published?'danger':'success'}" onclick="publish(${t.id})">${t.published?'Unpublish':'Publish'}</button></div></div>`).join(''):'<p class="small">Abhi koi test nahi hai.</p>';
- document.getElementById('studentTests').innerHTML=tests.filter(t=>t.published).map(t=>`
- <div class="test-item"><div><b>${t.name}</b><div class="small">${t.cls} • ${t.subject} • ${t.questions.length} questions • ${t.duration} min</div></div>
- <button class="btn primary" onclick="startTest(${t.id})">Start Test</button></div>`).join('') || '<p class="small">Abhi koi live test nahi hai.</p>';
-}
-function startTest(id){
- current=tests.find(t=>t.id===id); if(!current)return;
- document.getElementById('testArea').classList.remove('hidden');document.getElementById('resultArea').classList.add('hidden');
- document.getElementById('runningTitle').textContent=current.name;
- document.getElementById('questionsArea').innerHTML=current.questions.map((q,i)=>`
- <div class="question"><b>Q${i+1}. ${q.q}</b>
- ${q.options.map((o,j)=>`<label class="option"><input type="radio" name="q${i}" value="${j}"> ${o}</label>`).join('')}</div>`).join('');
- seconds=current.duration*60; updateTimer(); clearInterval(timer);timer=setInterval(()=>{seconds--;updateTimer();if(seconds<=0){clearInterval(timer);submitTest()}},1000);
- window.scrollTo({top:document.getElementById('testArea').offsetTop-20,behavior:'smooth'});
-}
-function updateTimer(){let m=Math.floor(seconds/60),s=seconds%60;document.getElementById('timer').textContent=`${m}:${String(s).padStart(2,'0')}`;}
-function submitTest(){
- if(!current)return; clearInterval(timer);let score=0;
- current.questions.forEach((q,i)=>{const a=document.querySelector(`input[name="q${i}"]:checked`);if(a&&Number(a.value)===q.correct)score++;});
- const pct=Math.round(score/current.questions.length*100);
- document.getElementById('resultArea').classList.remove('hidden');
- document.getElementById('resultArea').innerHTML=`<h2>Test Submitted</h2><h3>Score: ${score}/${current.questions.length}</h3><p>Percentage: ${pct}%</p><button class="btn primary" onclick="document.getElementById('testArea').classList.add('hidden')">Back to Tests</button>`;
- current=null;
-}
-render();
-</script>
- <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyBUG6LDNhB8kPW4fh8XURtIBb8ZpPNsM4w",
-    authDomain: "arka-medha-test-app.firebaseapp.com",
-    projectId: "arka-medha-test-app",
-    storageBucket: "arka-medha-test-app.firebasestorage.app",
-    messagingSenderId: "249649360234",
-    appId: "1:249649360234:web:3fcd302e5115573caa8913"
-  };
-
-  const app = initializeApp(firebaseConfig);
-
-  console.log("Firebase connected successfully");
-</script>
 </body>
 </html>

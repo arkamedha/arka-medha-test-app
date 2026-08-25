@@ -26,7 +26,6 @@ document.getElementById("logoutBtn").addEventListener("click", () => {
     signOut(auth).then(() => { window.location.href = "index.html"; });
 });
 
-// सिक्यूरिटी ड्रापडाउन को हैंडल करना
 document.getElementById("authType").addEventListener("change", (e) => {
     if(e.target.value === "pin") {
         document.getElementById("pinSection").style.display = "block";
@@ -144,7 +143,6 @@ loadQuestionsBtn.addEventListener("click", async () => {
                 document.getElementById("authType").value = qData.authType || "none";
                 document.getElementById("testPin").value = qData.testPin || "";
                 
-                // ट्रिगर चेंज इवेंट ताकि PIN बॉक्स दिखे या छुपे
                 document.getElementById("authType").dispatchEvent(new Event('change'));
 
                 document.getElementById("questionText").value = qData.question;
@@ -188,6 +186,8 @@ if(viewResultsBtn) {
             let html = "";
             querySnapshot.forEach((docSnap) => {
                 const data = docSnap.data();
+                const docId = docSnap.id; // रिजल्ट डिलीट करने के लिए ID निकाल रहे हैं
+                
                 let detailsHTML = "";
                 if(data.detailedResponses && data.detailedResponses.length > 0) {
                     detailsHTML += `<details style="margin-top: 15px; background: #f1f1f1; padding: 10px; border-radius: 5px; cursor: pointer;"><summary style="font-weight: bold; color: #0056b3; outline: none;">👀 View Answer Sheet</summary><div style="margin-top: 10px; font-size: 14px;">`;
@@ -198,17 +198,37 @@ if(viewResultsBtn) {
                     detailsHTML += `</div></details>`;
                 }
 
+                // यहाँ हमने 'Delete Result' बटन जोड़ा है
                 html += `
-                    <div class="saved-question" style="border-left-color: #28a745;">
+                    <div class="saved-question" style="border-left-color: #28a745; position: relative;">
                         <div style="font-weight: bold; font-size: 16px;">Student: ${data.studentName} (${data.rollNumber})</div>
                         <div style="color: #666; margin-top: 5px;"><strong>Test:</strong> ${data.testName}</div>
                         <div style="color: green; font-weight: bold; margin-top: 5px; font-size: 18px;">Score: ${data.score} / ${data.totalMarks}</div>
                         <div style="font-size: 12px; color: #999; margin-top: 5px;">Time: ${data.date}</div>
                         ${detailsHTML}
+                        <button class="delete-result-btn delete-btn" data-id="${docId}" style="margin-top: 15px;">🗑️ Delete Result</button>
                     </div>
                 `;
             });
             studentResultsArea.innerHTML = html;
+
+            // रिज़ल्ट डिलीट करने का नया लॉजिक
+            document.querySelectorAll(".delete-result-btn").forEach(btn => {
+                btn.addEventListener("click", async (e) => {
+                    const docId = e.target.getAttribute("data-id");
+                    if (confirm("Are you sure you want to delete this student's result? This cannot be undone.")) {
+                        try {
+                            await deleteDoc(doc(db, "Results", docId));
+                            alert("Result deleted successfully! 🗑️");
+                            viewResultsBtn.click(); // डिलीट होने के बाद लिस्ट खुद रिफ्रेश हो जाएगी
+                        } catch (error) {
+                            console.error("Error deleting result: ", error);
+                            alert("Error deleting result! ❌");
+                        }
+                    }
+                });
+            });
+
         } catch (error) {
             studentResultsArea.innerHTML = "<p style='color:red; text-align:center;'>Error loading results! ❌</p>";
         }

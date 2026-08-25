@@ -1,8 +1,7 @@
-// Firebase और Firestore को इम्पोर्ट करना
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+// यहाँ हमने query और where को भी इम्पोर्ट किया है ताकि हम सवालों को फ़िल्टर कर सकें
+import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
-// आपकी Firebase Configuration
 const firebaseConfig = {
     apiKey: "AIzaSyBUG6LDNhB8kPW4fh8XURtIBb8ZpPNsM4w",
     authDomain: "arka-medha-test-app.firebaseapp.com",
@@ -15,33 +14,75 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+const testSelectionArea = document.getElementById("testSelectionArea");
+const testList = document.getElementById("testList");
+const examArea = document.getElementById("examArea");
 const testContainer = document.getElementById("testContainer");
+const currentTestHeading = document.getElementById("currentTestHeading");
 const submitTestBtn = document.getElementById("submitTestBtn");
 const resultMessage = document.getElementById("resultMessage");
 
-let correctAnswers = {}; // सही उत्तरों को यहाँ सेव करेंगे
+let correctAnswers = {}; 
 let totalQuestions = 0;
 
-// डेटाबेस से क्वेश्चंस लाने का फंक्शन
-async function fetchQuestions() {
+// 1. डेटाबेस से सारे उपलब्ध टेस्ट के नाम लाना
+async function loadAvailableTests() {
     try {
         const querySnapshot = await getDocs(collection(db, "Tests"));
-        testContainer.innerHTML = ""; // Loading text हटा दें
+        testList.innerHTML = ""; 
+        
+        let uniqueTests = new Set(); // Set का उपयोग डुप्लीकेट नाम हटाने के लिए करते हैं
 
-        if (querySnapshot.empty) {
-            testContainer.innerHTML = "<p style='text-align:center; color:red;'>No test is live right now.</p>";
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            if(data.testName) {
+                uniqueTests.add(data.testName);
+            }
+        });
+
+        if (uniqueTests.size === 0) {
+            testList.innerHTML = "<p style='text-align:center; color:red;'>No tests are live right now.</p>";
             return;
         }
 
-        querySnapshot.forEach((doc, index) => {
+        // हर टेस्ट के लिए एक बटन बनाना
+        uniqueTests.forEach(testName => {
+            const btn = document.createElement("button");
+            btn.className = "test-btn";
+            btn.innerText = testName;
+            btn.onclick = () => startTest(testName); // क्लिक करने पर टेस्ट शुरू होगा
+            testList.appendChild(btn);
+        });
+
+    } catch (error) {
+        console.error("Error loading tests: ", error);
+        testList.innerHTML = "<p style='text-align:center; color:red;'>Error loading test list.</p>";
+    }
+}
+
+// 2. जब स्टूडेंट किसी टेस्ट पर क्लिक करे, तो सिर्फ उसके सवाल लाना
+async function startTest(selectedTestName) {
+    testSelectionArea.style.display = "none"; // टेस्ट लिस्ट छुपा दें
+    examArea.style.display = "block"; // एग्जाम एरिया दिखाएँ
+    currentTestHeading.innerText = selectedTestName;
+    testContainer.innerHTML = "<p style='text-align:center;'>Loading questions... ⏳</p>";
+
+    try {
+        // यहाँ हम Firebase को बोल रहे हैं कि सिर्फ वही सवाल लाओ जिनका testName मैच करता हो
+        const q = query(collection(db, "Tests"), where("testName", "==", selectedTestName));
+        const querySnapshot = await getDocs(q);
+        
+        testContainer.innerHTML = "";
+        correctAnswers = {};
+        totalQuestions = 0;
+
+        querySnapshot.forEach((doc) => {
             const data = doc.data();
             const qId = doc.id;
             const qNum = totalQuestions + 1;
             
-            // सही उत्तर को सेव कर लें (बाद में चेक करने के लिए)
             correctAnswers[qId] = data.answer; 
 
-            // क्वेश्चन को स्क्रीन पर दिखाना
             const questionHTML = `
                 <div class="question-box">
                     <div class="question-text">Q${qNum}. ${data.question}</div>
@@ -55,23 +96,20 @@ async function fetchQuestions() {
             totalQuestions++;
         });
 
-        // क्वेश्चन आने के बाद Submit बटन दिखाएँ
         submitTestBtn.style.display = "block";
 
     } catch (error) {
-        console.error("Error fetching test: ", error);
-        testContainer.innerHTML = "<p style='text-align:center; color:red;'>Error loading test.</p>";
+        console.error("Error fetching questions: ", error);
+        testContainer.innerHTML = "<p style='text-align:center; color:red;'>Error loading questions.</p>";
     }
 }
 
-// पेज खुलते ही क्वेश्चंस लोड करें
-fetchQuestions();
+// पेज खुलते ही टेस्ट की लिस्ट लोड करें
+loadAvailableTests();
 
-// जब स्टूडेंट Test Submit करे
+// 3. टेस्ट सबमिट करने का लॉजिक
 submitTestBtn.addEventListener("click", () => {
     let score = 0;
-
-    // चेक करें कि स्टूडेंट ने कौन से ऑप्शन सिलेक्ट किए हैं
     for (let qId in correctAnswers) {
         const selectedOption = document.querySelector(`input[name="${qId}"]:checked`);
         if (selectedOption && selectedOption.value === correctAnswers[qId]) {
@@ -79,7 +117,6 @@ submitTestBtn.addEventListener("click", () => {
         }
     }
 
-    // रिजल्ट स्क्रीन पर दिखाना
     testContainer.style.display = "none";
     submitTestBtn.style.display = "none";
     resultMessage.innerHTML = `Test Submitted! 🎉<br>Your Score: ${score} out of ${totalQuestions}`;

@@ -5,53 +5,111 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Teacher Dashboard - Arka-Medha</title>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: auto; background-color: #f4f4f9; }
-        .container { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        h2 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; color: #555; }
-        input[type="text"], input[type="number"], select, textarea { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        button { padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
-        button:hover { background-color: #0056b3; }
-        .question-list { margin-top: 30px; }
-        .question-card { border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 5px; background-color: #fff; border-left: 5px solid #28a745; }
-        .badge { background: #007bff; color: white; padding: 3px 8px; border-radius: 12px; font-size: 12px; }
+        body { font-family: Arial, sans-serif; background-color: #f4f7f6; padding: 20px; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0px 4px 15px rgba(0,0,0,0.1); }
+        h2 { color: #0056b3; text-align: center; }
+        label { font-weight: bold; margin-top: 10px; display: block; }
+        input, select, textarea { width: 100%; padding: 10px; margin-top: 5px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; }
+        button:hover { background-color: #218838; }
+        .view-btn { background-color: #17a2b8; margin-top: 20px; }
+        .view-btn:hover { background-color: #138496; }
+        #statusMessage { text-align: center; font-weight: bold; margin-top: 15px; }
+        .saved-question { background: #f9f9f9; padding: 15px; margin-top: 15px; border-left: 4px solid #0056b3; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .edit-btn, .delete-btn { color: white; padding: 8px; margin-top: 10px; width: auto; font-size: 14px; border: none; border-radius: 4px; cursor: pointer; }
+        .edit-btn { background-color: #ffc107; color: #333;}
+        .delete-btn { background-color: #dc3545; margin-left: 5px; }
+        .logout-btn { background-color: #dc3545; margin-bottom: 20px; }
+        .security-box, .question-box-style { background: #e9ecef; padding: 15px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #ccc; }
     </style>
 </head>
 <body>
-
     <div class="container">
-        <h2>Create a New Test</h2>
+        <button id="logoutBtn" class="logout-btn">Log Out</button>
+        <h2>Arka-Medha: Create / Edit Test</h2>
         
-        <!-- Question Form -->
-        <div class="form-group">
-            <label for="questionType">Select Question Type:</label>
-            <select id="questionType" onchange="renderQuestionFields()">
-                <option value="mcq">Multiple Choice (MCQ)</option>
-                <option value="numerical">Numerical</option>
-                <option value="subjective">Subjective</option>
+        <input type="hidden" id="editDocId" value="">
+        
+        <label>Test Name (e.g., Mock Test 1):</label>
+        <input type="text" id="testName" placeholder="Enter test name" required>
+
+        <label>Allowed Roll Nos (Leave blank for all):</label>
+        <input type="text" id="allowedRolls" placeholder="e.g. 101, 102, A105">
+
+        <label>⏱️ Test Duration (in minutes, blank for no limit):</label>
+        <input type="number" id="testDuration" placeholder="e.g. 30">
+
+        <div class="security-box">
+            <label>🔒 Security Level (Login Method):</label>
+            <select id="authType">
+                <option value="none">Direct Start (No Password)</option>
+                <option value="pin">Custom PIN / Password</option>
+                <option value="otp">SMS OTP Verification</option>
             </select>
+            <div id="pinSection" style="display: none;">
+                <label>Set PIN for this test:</label>
+                <input type="text" id="testPin" placeholder="e.g. 1234">
+            </div>
         </div>
 
-        <div class="form-group">
-            <label for="questionText">Question Statement:</label>
-            <textarea id="questionText" rows="3" placeholder="e.g., Calculate the velocity... or Solve the equation..."></textarea>
+        <div class="question-box-style">
+            <label>Question Type:</label>
+            <select id="qType">
+                <option value="MCQ">1. Multiple Choice (Options)</option>
+                <option value="NUMERICAL">2. Numerical Value (e.g., 9.8)</option>
+                <option value="SUBJECTIVE">3. Subjective / Long Answer</option>
+            </select>
+
+            <label>Question Marks:</label>
+            <input type="number" id="qMarks" value="1" placeholder="Marks for this question" required>
+
+            <label>Question Text:</label>
+            <textarea id="questionText" rows="3" placeholder="Type your question here..." required></textarea>
+            
+            <!-- MCQ Section -->
+            <div id="mcqSection">
+                <label>Option A:</label><input type="text" id="optA">
+                <label>Option B:</label><input type="text" id="optB">
+                <label>Option C:</label><input type="text" id="optC">
+                <label>Option D:</label><input type="text" id="optD">
+                
+                <label>Correct Answer:</label>
+                <select id="correctOption">
+                    <option value="A">Option A</option>
+                    <option value="B">Option B</option>
+                    <option value="C">Option C</option>
+                    <option value="D">Option D</option>
+                </select>
+            </div>
+
+            <!-- Numerical Section -->
+            <div id="numSection" style="display: none;">
+                <label>Correct Numerical Answer:</label>
+                <input type="number" step="any" id="numAnswer" placeholder="e.g. 9.81">
+                <small style="color:#666;">(Student must enter this exact number to get marks)</small>
+            </div>
+
+            <!-- Subjective Section -->
+            <div id="subjSection" style="display: none;">
+                <label>Correct Answer / Keywords (For your reference):</label>
+                <textarea id="subjAnswer" rows="2" placeholder="Type the exact text or keywords"></textarea>
+                <small style="color:#666;">(System checks exact match, otherwise you can review and grade manually.)</small>
+            </div>
         </div>
+        
+        <button id="publishBtn">Publish Question</button>
+        <p id="statusMessage"></p>
+        
+        <hr style="margin: 30px 0; border: 1px solid #eee;">
+        <h2>View & Edit Saved Questions</h2>
+        <button id="loadQuestionsBtn" class="view-btn">Load My Questions</button>
+        <div id="questionListArea"></div>
 
-        <!-- Dynamic Fields Container -->
-        <div id="dynamicFieldsContainer"></div>
-
-        <button onclick="addQuestion()">Add Question to Test</button>
+        <hr style="margin: 30px 0; border: 1px solid #eee;">
+        <h2>Student Results 📊</h2>
+        <button id="viewResultsBtn" class="view-btn" style="background-color: #6f42c1;">View Student Results</button>
+        <div id="studentResultsArea"></div>
     </div>
-
-    <!-- Display Added Questions -->
-    <div class="container question-list">
-        <h2>Questions Added (<span id="questionCount">0</span>)</h2>
-        <div id="questionsContainer">
-            <!-- Questions will be listed here -->
-        </div>
-    </div>
-
-    <script src="dashboard.js"></script>
+    <script type="module" src="dashboard.js"></script>
 </body>
 </html>

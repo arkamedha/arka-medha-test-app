@@ -1,121 +1,89 @@
-// Array to store all questions
-let testQuestions = JSON.parse(localStorage.getItem('arkaMedhaQuestions')) || [];
+// View Results Logic (Updated for Teacher Grading)
+const viewResultsBtn = document.getElementById("viewResultsBtn");
+const studentResultsArea = document.getElementById("studentResultsArea");
 
-// Function to render dynamic input fields based on question type
-function renderQuestionFields() {
-    const type = document.getElementById('questionType').value;
-    const container = document.getElementById('dynamicFieldsContainer');
-    
-    container.innerHTML = ''; 
+if(viewResultsBtn) {
+    viewResultsBtn.addEventListener("click", async () => {
+        studentResultsArea.innerHTML = "<p style='text-align:center;'>Loading Results... ⏳</p>";
+        try {
+            const querySnapshot = await getDocs(collection(db, "Results"));
+            if (querySnapshot.empty) { studentResultsArea.innerHTML = "<p style='text-align:center; color:red;'>No results found yet.</p>"; return; }
+            
+            let html = "";
+            querySnapshot.forEach((docSnap) => {
+                const data = docSnap.data();
+                const docId = docSnap.id; 
+                let status = data.status || "PUBLISHED"; // पुराना डेटा Published माना जाएगा
 
-    if (type === 'mcq') {
-        container.innerHTML = `
-            <div class="form-group">
-                <label>Options:</label>
-                <input type="text" id="optA" placeholder="Option A">
-                <input type="text" id="optB" placeholder="Option B">
-                <input type="text" id="optC" placeholder="Option C">
-                <input type="text" id="optD" placeholder="Option D">
-                <label>Correct Option:</label>
-                <select id="correctOption">
-                    <option value="A">A</option>
-                    <option value="B">B</option>
-                    <option value="C">C</option>
-                    <option value="D">D</option>
-                </select>
-            </div>
-        `;
-    } else if (type === 'numerical') {
-        container.innerHTML = `
-            <div class="form-group">
-                <label>Correct Numerical Value:</label>
-                <input type="number" step="any" id="numAnswer" placeholder="e.g., 9.8">
-            </div>
-        `;
-    } else if (type === 'subjective') {
-        container.innerHTML = `
-            <div class="form-group">
-                <label>Marking Scheme / Evaluation Keywords:</label>
-                <textarea id="subAnswer" rows="2" placeholder="Key points required for full marks..."></textarea>
-            </div>
-        `;
-    }
-}
+                let detailsHTML = "";
+                if(data.detailedResponses && data.detailedResponses.length > 0) {
+                    detailsHTML += `<details style="margin-top: 15px; background: #f1f1f1; padding: 10px; border-radius: 5px; cursor: pointer;"><summary style="font-weight: bold; color: #0056b3; outline: none;">👀 View Answer Sheet</summary><div style="margin-top: 10px; font-size: 14px;">`;
+                    data.detailedResponses.forEach(res => {
+                        let icon = res.isCorrect ? "✅" : (res.selected === "Not Attempted" ? "⚠️" : "❌");
+                        if(res.qType === "SUBJECTIVE" && status === "PENDING") icon = "✍️ (Check Manually)";
+                        
+                        let ansPrefix = res.qType === 'MCQ' ? 'Option ' : '';
+                        detailsHTML += `<p style="margin-bottom: 10px; border-bottom: 1px solid #ddd; padding-bottom: 8px;">
+                            <strong>Q${res.qNum}:</strong> ${res.question} <span style="color:#0056b3;">[${res.marks} Marks]</span><br>
+                            Student Answer: <strong>${res.selected}</strong> ${icon} <br>
+                            <span style="color: green; font-size: 13px;">Ideal Answer: ${ansPrefix}${res.correct}</span>
+                        </p>`;
+                    });
+                    detailsHTML += `</div></details>`;
+                }
 
-// Function to save the question
-function addQuestion() {
-    const type = document.getElementById('questionType').value;
-    const text = document.getElementById('questionText').value.trim();
+                // अगर रिज़ल्ट PENDING है, तो टीचर को नंबर अपडेट करके Publish करने का बॉक्स दिखेगा
+                let gradingHTML = "";
+                if(status === "PENDING") {
+                    gradingHTML = `
+                        <div style="margin-top:10px; padding:10px; background:#fff3cd; border:1px solid #ffeeba; border-radius:5px;">
+                            <label style="font-size:14px; font-weight:bold; color:#856404;">Teacher Action Required:</label><br>
+                            <span style="font-size:13px;">Check the subjective answers above and update total score:</span><br>
+                            <input type="number" step="any" id="updateScore_${docId}" value="${data.score}" style="width:70px; padding:5px; margin-top:5px;"> / ${data.totalMarks}
+                            <button class="publish-res-btn" data-id="${docId}" style="background:#28a745; color:white; border:none; padding:6px 10px; border-radius:3px; cursor:pointer; margin-left:10px;">✅ Publish Final Result</button>
+                        </div>
+                    `;
+                }
 
-    if (text === "") {
-        alert("Please enter the question text!");
-        return;
-    }
+                let statusBadge = status === "PENDING" ? `<span style="background:orange; color:white; padding:2px 5px; border-radius:3px; font-size:12px;">⏳ Needs Checking</span>` : `<span style="background:green; color:white; padding:2px 5px; border-radius:3px; font-size:12px;">✅ Published</span>`;
 
-    let newQuestion = {
-        id: Date.now(),
-        type: type,
-        question: text,
-    };
+                html += `
+                    <div class="saved-question" style="border-left-color: ${status === 'PENDING' ? 'orange' : '#28a745'}; position: relative;">
+                        <div style="font-weight: bold; font-size: 16px;">Student: ${data.studentName} (${data.rollNumber})</div>
+                        <div style="color: #666; margin-top: 5px;"><strong>Test:</strong> ${data.testName}</div>
+                        <div style="color: green; font-weight: bold; margin-top: 5px; font-size: 18px;">Current Score: ${status === 'PENDING' ? '?' : data.score} / ${data.totalMarks} ${statusBadge}</div>
+                        <div style="font-size: 12px; color: #999; margin-top: 5px;">Time: ${data.date}</div>
+                        ${detailsHTML}
+                        ${gradingHTML}
+                        <button class="delete-result-btn delete-btn" data-id="${docId}" style="margin-top: 15px;">🗑️ Delete</button>
+                    </div>
+                `;
+            });
+            studentResultsArea.innerHTML = html;
 
-    // Capture specific data based on type
-    if (type === 'mcq') {
-        newQuestion.options = {
-            A: document.getElementById('optA').value || 'N/A',
-            B: document.getElementById('optB').value || 'N/A',
-            C: document.getElementById('optC').value || 'N/A',
-            D: document.getElementById('optD').value || 'N/A'
-        };
-        newQuestion.correctAnswer = document.getElementById('correctOption').value;
-    } else if (type === 'numerical') {
-        newQuestion.correctAnswer = document.getElementById('numAnswer').value;
-    } else if (type === 'subjective') {
-        newQuestion.markingScheme = document.getElementById('subAnswer').value;
-    }
+            // रिज़ल्ट पब्लिश करने का लॉजिक (Update Score)
+            document.querySelectorAll(".publish-res-btn").forEach(btn => {
+                btn.addEventListener("click", async (e) => {
+                    const docId = e.target.getAttribute("data-id");
+                    const newScore = document.getElementById(`updateScore_${docId}`).value;
+                    if(confirm(`Are you sure you want to publish the final score as ${newScore}?`)) {
+                        try {
+                            await updateDoc(doc(db, "Results", docId), { score: parseFloat(newScore), status: "PUBLISHED" });
+                            alert("Result Published Successfully! Student can now see their score.");
+                            viewResultsBtn.click(); // लिस्ट रिफ्रेश करें
+                        } catch(err) { alert("Error publishing result."); }
+                    }
+                });
+            });
 
-    // Save to array and local storage
-    testQuestions.push(newQuestion);
-    localStorage.setItem('arkaMedhaQuestions', JSON.stringify(testQuestions));
-
-    // Clear form for next question
-    document.getElementById('questionText').value = "";
-    renderQuestionFields(); // Reset dynamic fields
-    displayQuestions(); // Update screen
-}
-
-// Function to display saved questions on the screen
-function displayQuestions() {
-    const container = document.getElementById('questionsContainer');
-    const countSpan = document.getElementById('questionCount');
-    
-    container.innerHTML = '';
-    countSpan.textContent = testQuestions.length;
-
-    testQuestions.forEach((q, index) => {
-        let detailsHtml = '';
-        
-        if (q.type === 'mcq') {
-            detailsHtml = `
-                <p><strong>A)</strong> ${q.options.A} | <strong>B)</strong> ${q.options.B} | <strong>C)</strong> ${q.options.C} | <strong>D)</strong> ${q.options.D}</p>
-                <p style="color: green;"><strong>Answer:</strong> ${q.correctAnswer}</p>
-            `;
-        } else if (q.type === 'numerical') {
-            detailsHtml = `<p style="color: green;"><strong>Answer:</strong> ${q.correctAnswer}</p>`;
-        } else if (q.type === 'subjective') {
-            detailsHtml = `<p style="color: gray;"><strong>Marking Scheme:</strong> ${q.markingScheme}</p>`;
-        }
-
-        container.innerHTML += `
-            <div class="question-card">
-                <p><span class="badge">${q.type.toUpperCase()}</span> <strong>Q${index + 1}:</strong> ${q.question}</p>
-                ${detailsHtml}
-            </div>
-        `;
+            document.querySelectorAll(".delete-result-btn").forEach(btn => {
+                btn.addEventListener("click", async (e) => {
+                    if (confirm("Delete this student's result?")) {
+                        await deleteDoc(doc(db, "Results", e.target.getAttribute("data-id")));
+                        viewResultsBtn.click(); 
+                    }
+                });
+            });
+        } catch (error) { studentResultsArea.innerHTML = "<p style='color:red; text-align:center;'>Error loading results! ❌</p>"; }
     });
 }
-
-// Initialize on page load
-window.onload = function() {
-    renderQuestionFields();
-    displayQuestions();
-};
